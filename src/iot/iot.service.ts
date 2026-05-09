@@ -4,6 +4,8 @@ import { Repository } from 'typeorm';
 import { Sensor, SensorStatus } from '../database/entities/Sensor.entity';
 import { SensorData } from '../database/entities/SensorData.entity';
 import { RealtimeService } from '../realtime/realtime.service';
+import { AlertsService } from '../alerts/alerts.service';
+import { AlertSeverity, AlertType } from '../database/entities/Alert.entity';
 
 @Injectable()
 export class IotService {
@@ -15,6 +17,7 @@ export class IotService {
     @InjectRepository(SensorData)
     private readonly sensorDataRepository: Repository<SensorData>,
     private readonly realtimeService: RealtimeService,
+    private readonly alertsService: AlertsService,
   ) {}
 
   async processSensorData(sensorId: string, value: number): Promise<void> {
@@ -61,14 +64,36 @@ export class IotService {
         this.logger.warn(
           `Threshold violation for sensor ${sensorId}: ${value}`,
         );
-        this.realtimeService.broadcastToAll('threshold-alert', {
-          sensorId: sensor.id,
-          stationId: sensor.station?.id,
-          value,
-          minThreshold: sensor.minThreshold,
-          maxThreshold: sensor.maxThreshold,
-          timestamp: new Date(),
-        });
+
+        // Create persistent alert
+        try {
+          const severity = AlertSeverity.WARNING;
+          const message = `Threshold violation on sensor ${sensor.name}: ${value}`;
+          const description = `Sensor reading ${value} violates thresholds (min: ${sensor.minThreshold}, max: ${sensor.maxThreshold})`;
+
+          await this.alertsService.create({
+            type: AlertType.THRESHOLD_VIOLATION,
+            severity,
+            message,
+            description,
+            stationId: sensor.station?.id,
+            sensorId: sensor.id,
+            sourceSystem: 'iot-mqtt',
+            data: {
+              value,
+              minThreshold: sensor.minThreshold,
+              maxThreshold: sensor.maxThreshold,
+            },
+          });
+        } catch (alertError) {
+          const msg =
+            alertError instanceof Error
+              ? alertError.message
+              : String(alertError);
+          this.logger.error(
+            `Failed to create threshold alert for sensor ${sensorId}: ${msg}`,
+          );
+        }
       }
     } catch (error) {
       this.logger.error(

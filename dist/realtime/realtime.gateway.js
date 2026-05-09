@@ -17,16 +17,35 @@ exports.RealtimeGateway = void 0;
 const websockets_1 = require("@nestjs/websockets");
 const common_1 = require("@nestjs/common");
 const socket_io_1 = require("socket.io");
+const jwt_1 = require("@nestjs/jwt");
+const config_1 = require("@nestjs/config");
 const realtime_service_1 = require("./realtime.service");
 let RealtimeGateway = RealtimeGateway_1 = class RealtimeGateway {
-    constructor(realtimeService) {
+    constructor(realtimeService, jwtService, configService) {
         this.realtimeService = realtimeService;
+        this.jwtService = jwtService;
+        this.configService = configService;
         this.logger = new common_1.Logger(RealtimeGateway_1.name);
     }
     handleConnection(client) {
-        const userId = client.handshake.query.userId;
-        this.logger.log(`Client connected: ${client.id} (User: ${userId})`);
-        this.realtimeService.addConnection(client.id, client, userId);
+        try {
+            const token = client.handshake.auth?.token;
+            if (!token) {
+                this.logger.warn(`Client connection rejected: no token provided (socket: ${client.id})`);
+                client.disconnect(true);
+                return;
+            }
+            const secret = this.configService.get('JWT_SECRET') || 'your-secret-key';
+            const payload = this.jwtService.verify(token, { secret });
+            const userId = payload.sub;
+            this.logger.log(`Client connected: ${client.id} (User: ${userId})`);
+            this.realtimeService.addConnection(client.id, client, userId);
+        }
+        catch (error) {
+            const message = error instanceof Error ? error.message : String(error);
+            this.logger.warn(`Client connection rejected: invalid token (socket: ${client.id}, reason: ${message})`);
+            client.disconnect(true);
+        }
     }
     handleDisconnect(client) {
         const userId = this.realtimeService.getUserIdByClientId(client.id);
@@ -79,6 +98,8 @@ exports.RealtimeGateway = RealtimeGateway = RealtimeGateway_1 = __decorate([
             credentials: true,
         },
     }),
-    __metadata("design:paramtypes", [realtime_service_1.RealtimeService])
+    __metadata("design:paramtypes", [realtime_service_1.RealtimeService,
+        jwt_1.JwtService,
+        config_1.ConfigService])
 ], RealtimeGateway);
 //# sourceMappingURL=realtime.gateway.js.map

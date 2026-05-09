@@ -14,9 +14,11 @@ exports.MqttClient = void 0;
 const common_1 = require("@nestjs/common");
 const config_1 = require("@nestjs/config");
 const mqtt = require("mqtt");
+const iot_service_1 = require("../iot.service");
 let MqttClient = MqttClient_1 = class MqttClient {
-    constructor(configService) {
+    constructor(configService, iotService) {
         this.configService = configService;
+        this.iotService = iotService;
         this.logger = new common_1.Logger(MqttClient_1.name);
         this.isConnected = false;
     }
@@ -94,6 +96,19 @@ let MqttClient = MqttClient_1 = class MqttClient {
         try {
             const message = JSON.parse(payload.toString());
             this.logger.debug(`MQTT message received on ${topic}`);
+            if (topic.startsWith('sensors/') && topic.endsWith('/data')) {
+                const [, sensorId] = topic.split('/');
+                const rawValue = message?.value;
+                const value = typeof rawValue === 'number' ? rawValue : Number(rawValue);
+                if (!sensorId || Number.isNaN(value)) {
+                    this.logger.warn(`Invalid sensor payload on ${topic}: ${payload.toString()}`);
+                    return;
+                }
+                this.iotService.processSensorData(sensorId, value).catch((error) => {
+                    const message = error instanceof Error ? error.message : String(error);
+                    this.logger.error(`Failed to process sensor data for ${sensorId}: ${message}`);
+                });
+            }
         }
         catch (error) {
             const message = error instanceof Error ? error.message : String(error);
@@ -136,6 +151,7 @@ let MqttClient = MqttClient_1 = class MqttClient {
 exports.MqttClient = MqttClient;
 exports.MqttClient = MqttClient = MqttClient_1 = __decorate([
     (0, common_1.Injectable)(),
-    __metadata("design:paramtypes", [config_1.ConfigService])
+    __metadata("design:paramtypes", [config_1.ConfigService,
+        iot_service_1.IotService])
 ], MqttClient);
 //# sourceMappingURL=mqtt.client.js.map

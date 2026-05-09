@@ -12,6 +12,7 @@ const typeorm_1 = require("@nestjs/typeorm");
 const Sensor_entity_1 = require("../database/entities/Sensor.entity");
 const SensorData_entity_1 = require("../database/entities/SensorData.entity");
 const realtime_module_1 = require("../realtime/realtime.module");
+const alerts_module_1 = require("../alerts/alerts.module");
 const iot_service_1 = require("./iot.service");
 const mqtt_client_1 = require("./mqtt/mqtt.client");
 let IotModule = class IotModule {
@@ -22,6 +23,7 @@ exports.IotModule = IotModule = __decorate([
         imports: [
             typeorm_1.TypeOrmModule.forFeature([Sensor_entity_1.Sensor, SensorData_entity_1.SensorData]),
             realtime_module_1.RealtimeModule,
+            alerts_module_1.AlertsModule,
         ],
         providers: [iot_service_1.IotService, mqtt_client_1.MqttClient],
         exports: [iot_service_1.IotService],

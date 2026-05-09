@@ -1,11 +1,13 @@
 import { OnModuleInit, OnModuleDestroy } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { IotService } from '../iot.service';
 export declare class MqttClient implements OnModuleInit, OnModuleDestroy {
     private readonly configService;
+    private readonly iotService;
     private readonly logger;
     private client?;
     private isConnected;
-    constructor(configService: ConfigService);
+    constructor(configService: ConfigService, iotService: IotService);
     onModuleInit(): Promise<void>;
     onModuleDestroy(): Promise<void>;
     connect(): Promise<void>;

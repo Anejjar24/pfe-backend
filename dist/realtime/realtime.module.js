@@ -8,6 +8,8 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.RealtimeModule = void 0;
 const common_1 = require("@nestjs/common");
+const jwt_1 = require("@nestjs/jwt");
+const config_1 = require("@nestjs/config");
 const realtime_gateway_1 = require("./realtime.gateway");
 const realtime_service_1 = require("./realtime.service");
 let RealtimeModule = class RealtimeModule {
@@ -15,6 +17,16 @@ let RealtimeModule = class RealtimeModule {
 exports.RealtimeModule = RealtimeModule;
 exports.RealtimeModule = RealtimeModule = __decorate([
     (0, common_1.Module)({
+        imports: [
+            config_1.ConfigModule,
+            jwt_1.JwtModule.registerAsync({
+                imports: [config_1.ConfigModule],
+                useFactory: (configService) => ({
+                    secret: configService.get('JWT_SECRET') || 'your-secret-key',
+                }),
+                inject: [config_1.ConfigService],
+            }),
+        ],
         providers: [realtime_gateway_1.RealtimeGateway, realtime_service_1.RealtimeService],
         exports: [realtime_service_1.RealtimeService],
     })

@@ -2,6 +2,7 @@ import { Injectable, Logger, OnModuleInit, OnModuleDestroy } from '@nestjs/commo
 import { ConfigService } from '@nestjs/config';
 import * as mqtt from 'mqtt';
 import { MqttClient as MqttClientType } from 'mqtt';
+import { IotService } from '../iot.service';
 
 @Injectable()
 export class MqttClient implements OnModuleInit, OnModuleDestroy {
@@ -9,7 +10,10 @@ export class MqttClient implements OnModuleInit, OnModuleDestroy {
   private client?: MqttClientType;
   private isConnected = false;
 
-  constructor(private readonly configService: ConfigService) {}
+  constructor(
+    private readonly configService: ConfigService,
+    private readonly iotService: IotService,
+  ) {}
 
   async onModuleInit() {
     await this.connect();
@@ -97,7 +101,28 @@ export class MqttClient implements OnModuleInit, OnModuleDestroy {
     try {
       const message = JSON.parse(payload.toString());
       this.logger.debug(`MQTT message received on ${topic}`);
-      // Message handling will be delegated to IotService
+
+      if (topic.startsWith('sensors/') && topic.endsWith('/data')) {
+        const [, sensorId] = topic.split('/');
+        const rawValue = message?.value;
+        const value =
+          typeof rawValue === 'number' ? rawValue : Number(rawValue);
+
+        if (!sensorId || Number.isNaN(value)) {
+          this.logger.warn(
+            `Invalid sensor payload on ${topic}: ${payload.toString()}`,
+          );
+          return;
+        }
+
+        this.iotService.processSensorData(sensorId, value).catch((error) => {
+          const message =
+            error instanceof Error ? error.message : String(error);
+          this.logger.error(
+            `Failed to process sensor data for ${sensorId}: ${message}`,
+          );
+        });
+      }
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
       this.logger.error(`Failed to parse MQTT message: ${message}`);

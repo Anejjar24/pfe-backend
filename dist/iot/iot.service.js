@@ -20,11 +20,14 @@ const typeorm_2 = require("typeorm");
 const Sensor_entity_1 = require("../database/entities/Sensor.entity");
 const SensorData_entity_1 = require("../database/entities/SensorData.entity");
 const realtime_service_1 = require("../realtime/realtime.service");
+const alerts_service_1 = require("../alerts/alerts.service");
+const Alert_entity_1 = require("../database/entities/Alert.entity");
 let IotService = IotService_1 = class IotService {
-    constructor(sensorRepository, sensorDataRepository, realtimeService) {
+    constructor(sensorRepository, sensorDataRepository, realtimeService, alertsService) {
         this.sensorRepository = sensorRepository;
         this.sensorDataRepository = sensorDataRepository;
         this.realtimeService = realtimeService;
+        this.alertsService = alertsService;
         this.logger = new common_1.Logger(IotService_1.name);
     }
     async processSensorData(sensorId, value) {
@@ -58,14 +61,31 @@ let IotService = IotService_1 = class IotService {
             });
             if (thresholdViolated && sensor.alertEnabled) {
                 this.logger.warn(`Threshold violation for sensor ${sensorId}: ${value}`);
-                this.realtimeService.broadcastToAll('threshold-alert', {
-                    sensorId: sensor.id,
-                    stationId: sensor.station?.id,
-                    value,
-                    minThreshold: sensor.minThreshold,
-                    maxThreshold: sensor.maxThreshold,
-                    timestamp: new Date(),
-                });
+                try {
+                    const severity = Alert_entity_1.AlertSeverity.WARNING;
+                    const message = `Threshold violation on sensor ${sensor.name}: ${value}`;
+                    const description = `Sensor reading ${value} violates thresholds (min: ${sensor.minThreshold}, max: ${sensor.maxThreshold})`;
+                    await this.alertsService.create({
+                        type: Alert_entity_1.AlertType.THRESHOLD_VIOLATION,
+                        severity,
+                        message,
+                        description,
+                        stationId: sensor.station?.id,
+                        sensorId: sensor.id,
+                        sourceSystem: 'iot-mqtt',
+                        data: {
+                            value,
+                            minThreshold: sensor.minThreshold,
+                            maxThreshold: sensor.maxThreshold,
+                        },
+                    });
+                }
+                catch (alertError) {
+                    const msg = alertError instanceof Error
+                        ? alertError.message
+                        : String(alertError);
+                    this.logger.error(`Failed to create threshold alert for sensor ${sensorId}: ${msg}`);
+                }
             }
         }
         catch (error) {
@@ -100,6 +120,7 @@ exports.IotService = IotService = IotService_1 = __decorate([
     __param(1, (0, typeorm_1.InjectRepository)(SensorData_entity_1.SensorData)),
     __metadata("design:paramtypes", [typeorm_2.Repository,
         typeorm_2.Repository,
-        realtime_service_1.RealtimeService])
+        realtime_service_1.RealtimeService,
+        alerts_service_1.AlertsService])
 ], IotService);
 //# sourceMappingURL=iot.service.js.map
