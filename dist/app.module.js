@@ -14,6 +14,7 @@ const database_module_1 = require("./database/database.module");
 const auth_module_1 = require("./auth/auth.module");
 const realtime_module_1 = require("./realtime/realtime.module");
 const iot_module_1 = require("./iot/iot.module");
+const stations_module_1 = require("./stations/stations.module");
 let AppModule = class AppModule {
 };
 exports.AppModule = AppModule;
@@ -28,6 +29,7 @@ exports.AppModule = AppModule = __decorate([
             auth_module_1.AuthModule,
             realtime_module_1.RealtimeModule,
             iot_module_1.IotModule,
+            stations_module_1.StationsModule,
             flows_module_1.FlowsModule,
         ],
     })
