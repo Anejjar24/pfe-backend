@@ -44,7 +44,9 @@ export declare class AuthController {
     getCurrentUser(req: {
         user: User;
     }): Promise<User>;
-    logout(): Promise<{
+    logout(req: {
+        user: User;
+    }): Promise<{
         message: string;
     }>;
 }

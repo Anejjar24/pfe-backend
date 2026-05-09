@@ -91,6 +91,10 @@ let AuthService = AuthService_1 = class AuthService {
         }
         return user;
     }
+    async logout(user) {
+        this.logger.log(`User logged out: ${user.email}`);
+        return { message: 'Logged out successfully' };
+    }
     async generateTokens(user) {
         const payload = {
             sub: user.id,

@@ -47,6 +47,9 @@ export declare class AuthService {
         };
     }>;
     validateUser(id: string): Promise<User>;
+    logout(user: User): Promise<{
+        message: string;
+    }>;
     private generateTokens;
     private getUserResponse;
 }

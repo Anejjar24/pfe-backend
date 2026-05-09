@@ -31,8 +31,8 @@ let AuthController = class AuthController {
     async getCurrentUser(req) {
         return req.user;
     }
-    async logout() {
-        return { message: 'Logged out successfully' };
+    async logout(req) {
+        return this.authService.logout(req.user);
     }
 };
 exports.AuthController = AuthController;
@@ -62,9 +62,11 @@ __decorate([
 ], AuthController.prototype, "getCurrentUser", null);
 __decorate([
     (0, common_1.Post)('logout'),
+    (0, common_1.UseGuards)(jwt_guard_1.JwtGuard),
     (0, common_1.HttpCode)(common_1.HttpStatus.OK),
+    __param(0, (0, common_1.Request)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", []),
+    __metadata("design:paramtypes", [Object]),
     __metadata("design:returntype", Promise)
 ], AuthController.prototype, "logout", null);
 exports.AuthController = AuthController = __decorate([

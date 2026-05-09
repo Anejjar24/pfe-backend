@@ -117,6 +117,11 @@ export class AuthService {
     return user;
   }
 
+  async logout(user: User) {
+    this.logger.log(`User logged out: ${user.email}`);
+    return { message: 'Logged out successfully' };
+  }
+
   private async generateTokens(user: User) {
     const payload = {
       sub: user.id,
