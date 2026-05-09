@@ -12,8 +12,9 @@ import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
 import { JwtGuard } from '../common/guards/jwt.guard';
+import { User } from '../database/entities/User.entity';
 
-@Controller('api/auth')
+@Controller('auth')
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
@@ -31,7 +32,7 @@ export class AuthController {
 
   @Get('me')
   @UseGuards(JwtGuard)
-  async getCurrentUser(@Request() req) {
+  async getCurrentUser(@Request() req: { user: User }) {
     return req.user;
   }
 

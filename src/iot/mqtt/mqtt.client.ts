@@ -6,7 +6,7 @@ import { MqttClient as MqttClientType } from 'mqtt';
 @Injectable()
 export class MqttClient implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger(MqttClient.name);
-  private client: MqttClientType;
+  private client?: MqttClientType;
   private isConnected = false;
 
   constructor(private readonly configService: ConfigService) {}
@@ -45,12 +45,12 @@ export class MqttClient implements OnModuleInit, OnModuleDestroy {
         resolve();
       });
 
-      this.client.on('error', (error) => {
+      this.client.on('error', (error: Error) => {
         this.logger.error(`MQTT connection error: ${error.message}`);
         reject(error);
       });
 
-      this.client.on('message', (topic, payload) => {
+      this.client.on('message', (topic: string, payload: Buffer) => {
         this.handleMessage(topic, payload);
       });
 
@@ -83,7 +83,7 @@ export class MqttClient implements OnModuleInit, OnModuleDestroy {
     ];
 
     topics.forEach((topic) => {
-      this.client.subscribe(topic, (err) => {
+      this.client?.subscribe(topic, (err: Error | null) => {
         if (err) {
           this.logger.error(`Failed to subscribe to ${topic}: ${err}`);
         } else {
@@ -99,7 +99,8 @@ export class MqttClient implements OnModuleInit, OnModuleDestroy {
       this.logger.debug(`MQTT message received on ${topic}`);
       // Message handling will be delegated to IotService
     } catch (error) {
-      this.logger.error(`Failed to parse MQTT message: ${error.message}`);
+      const message = error instanceof Error ? error.message : String(error);
+      this.logger.error(`Failed to parse MQTT message: ${message}`);
     }
   }
 
@@ -111,7 +112,7 @@ export class MqttClient implements OnModuleInit, OnModuleDestroy {
       }
 
       const payload = JSON.stringify(message);
-      this.client.publish(topic, payload, { qos: 1 }, (err) => {
+      this.client?.publish(topic, payload, { qos: 1 }, (err?: Error) => {
         if (err) {
           this.logger.error(`Failed to publish to ${topic}: ${err}`);
           reject(err);
@@ -124,7 +125,7 @@ export class MqttClient implements OnModuleInit, OnModuleDestroy {
   }
 
   subscribe(topic: string, callback: (topic: string, payload: Buffer) => void): void {
-    this.client.subscribe(topic, (err) => {
+    this.client?.subscribe(topic, (err: Error | null) => {
       if (err) {
         this.logger.error(`Failed to subscribe to ${topic}: ${err}`);
       } else {

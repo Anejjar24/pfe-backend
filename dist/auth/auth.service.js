@@ -1,0 +1,121 @@
+"use strict";
+var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
+var __metadata = (this && this.__metadata) || function (k, v) {
+    if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
+};
+var __param = (this && this.__param) || function (paramIndex, decorator) {
+    return function (target, key) { decorator(target, key, paramIndex); }
+};
+var AuthService_1;
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.AuthService = void 0;
+const common_1 = require("@nestjs/common");
+const jwt_1 = require("@nestjs/jwt");
+const typeorm_1 = require("typeorm");
+const typeorm_2 = require("@nestjs/typeorm");
+const User_entity_1 = require("../database/entities/User.entity");
+const password_util_1 = require("./utils/password.util");
+let AuthService = AuthService_1 = class AuthService {
+    constructor(userRepository, jwtService, passwordUtil) {
+        this.userRepository = userRepository;
+        this.jwtService = jwtService;
+        this.passwordUtil = passwordUtil;
+        this.logger = new common_1.Logger(AuthService_1.name);
+    }
+    async register(registerDto) {
+        const { email, password, firstname, lastname } = registerDto;
+        const existingUser = await this.userRepository.findOne({
+            where: { email },
+        });
+        if (existingUser) {
+            throw new common_1.ConflictException('User with this email already exists');
+        }
+        const hashedPassword = await this.passwordUtil.hashPassword(password);
+        const newUser = this.userRepository.create({
+            email,
+            password: hashedPassword,
+            firstname,
+            lastname,
+            role: User_entity_1.UserRole.OPERATOR,
+            isActive: true,
+        });
+        try {
+            const savedUser = await this.userRepository.save(newUser);
+            this.logger.log(`New user registered: ${email}`);
+            const { access_token, refresh_token } = await this.generateTokens(savedUser);
+            return {
+                access_token,
+                refresh_token,
+                user: this.getUserResponse(savedUser),
+            };
+        }
+        catch (error) {
+            this.logger.error(`User registration failed: ${email}`, error);
+            throw new common_1.BadRequestException('Failed to create user');
+        }
+    }
+    async login(loginDto) {
+        const { email, password } = loginDto;
+        const user = await this.userRepository.findOne({
+            where: { email },
+        });
+        if (!user) {
+            throw new common_1.UnauthorizedException('Invalid email or password');
+        }
+        if (!user.isActive) {
+            throw new common_1.UnauthorizedException('User account is disabled');
+        }
+        const isPasswordValid = await this.passwordUtil.comparePasswords(password, user.password);
+        if (!isPasswordValid) {
+            throw new common_1.UnauthorizedException('Invalid email or password');
+        }
+        this.logger.log(`User logged in: ${email}`);
+        const { access_token, refresh_token } = await this.generateTokens(user);
+        return {
+            access_token,
+            refresh_token,
+            user: this.getUserResponse(user),
+        };
+    }
+    async validateUser(id) {
+        const user = await this.userRepository.findOne({
+            where: { id },
+        });
+        if (!user || !user.isActive) {
+            throw new common_1.UnauthorizedException('User not found or account disabled');
+        }
+        return user;
+    }
+    async generateTokens(user) {
+        const payload = {
+            sub: user.id,
+            email: user.email,
+            role: user.role,
+        };
+        const access_token = this.jwtService.sign(payload, {
+            expiresIn: '1h',
+        });
+        const refresh_token = this.jwtService.sign(payload, {
+            expiresIn: '7d',
+        });
+        return { access_token, refresh_token };
+    }
+    getUserResponse(user) {
+        const { password, ...userWithoutPassword } = user;
+        return userWithoutPassword;
+    }
+};
+exports.AuthService = AuthService;
+exports.AuthService = AuthService = AuthService_1 = __decorate([
+    (0, common_1.Injectable)(),
+    __param(0, (0, typeorm_2.InjectRepository)(User_entity_1.User)),
+    __metadata("design:paramtypes", [typeorm_1.Repository,
+        jwt_1.JwtService,
+        password_util_1.PasswordUtil])
+], AuthService);
+//# sourceMappingURL=auth.service.js.map

@@ -8,6 +8,9 @@ import {
   ManyToOne,
   JoinColumn,
 } from 'typeorm';
+import { Alert } from './Alert.entity';
+import { SensorData } from './SensorData.entity';
+import { Station } from './Station.entity';
 
 export enum SensorType {
   PRESSURE = 'pressure',
@@ -72,15 +75,15 @@ export class Sensor {
   @Column({ type: 'jsonb', nullable: true })
   metadata: Record<string, any>;
 
-  @ManyToOne(() => import('./Station.entity').Station, (station) => station.sensors)
+  @ManyToOne(() => Station, (station) => station.sensors)
   @JoinColumn({ name: 'station_id' })
-  station: any;
+  station: Station;
 
-  @OneToMany(() => import('./SensorData.entity').SensorData, (data) => data.sensor)
-  sensorData: any[];
+  @OneToMany(() => SensorData, (data) => data.sensor)
+  sensorData: SensorData[];
 
-  @OneToMany(() => import('./Alert.entity').Alert, (alert) => alert.sensor)
-  alerts: any[];
+  @OneToMany(() => Alert, (alert) => alert.sensor)
+  alerts: Alert[];
 
   @CreateDateColumn()
   createdAt: Date;

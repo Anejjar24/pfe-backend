@@ -11,6 +11,7 @@ import {
 import { User } from './User.entity';
 import { Station } from './Station.entity';
 import { Sensor } from './Sensor.entity';
+import { Notification } from './Notification.entity';
 
 export enum AlertType {
   THRESHOLD_VIOLATION = 'threshold_violation',
@@ -108,8 +109,8 @@ export class Alert {
   @UpdateDateColumn()
   updatedAt: Date;
 
-  @OneToMany(() => import('./Notification.entity').Notification, (n) => n.alert)
-  notifications: any[];
+  @OneToMany(() => Notification, (notification) => notification.alert)
+  notifications: Notification[];
 
   get duration(): number {
     if (this.acknowledgedAt) {

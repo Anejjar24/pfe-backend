@@ -9,6 +9,7 @@ import {
   OneToMany,
 } from 'typeorm';
 import { User } from './User.entity';
+import { WorkflowExecution } from './WorkflowExecution.entity';
 
 export enum WorkflowStatus {
   DRAFT = 'draft',
@@ -95,8 +96,8 @@ export class Workflow {
   @Column({ type: 'jsonb', nullable: true })
   metadata: Record<string, any>;
 
-  @OneToMany(() => import('./WorkflowExecution.entity').WorkflowExecution, (exec) => exec.workflow)
-  executions: any[];
+  @OneToMany(() => WorkflowExecution, (execution) => execution.workflow)
+  executions: WorkflowExecution[];
 
   get isValid(): boolean {
     return this.graph && Object.keys(this.graph).length > 0;

@@ -12,7 +12,7 @@ export class RealtimeService {
     if (!this.userConnections.has(userId)) {
       this.userConnections.set(userId, []);
     }
-    this.userConnections.get(userId).push(clientId);
+    this.userConnections.get(userId)?.push(clientId);
     this.logger.debug(
       `Connection added: ${clientId} for user ${userId}. Total: ${this.connections.size}`,
     );

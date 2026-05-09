@@ -8,6 +8,10 @@ import {
   ManyToOne,
   JoinColumn,
 } from 'typeorm';
+import { Alert } from './Alert.entity';
+import { Maintenance } from './Maintenance.entity';
+import { Sensor } from './Sensor.entity';
+import { User } from './User.entity';
 
 export enum StationStatus {
   NORMAL = 'normal',
@@ -69,18 +73,18 @@ export class Station {
   @Column({ type: 'jsonb', nullable: true })
   metadata: Record<string, any>;
 
-  @ManyToOne(() => import('./User.entity').User, { nullable: true })
+  @ManyToOne(() => User, { nullable: true })
   @JoinColumn({ name: 'created_by' })
-  createdBy: any;
+  createdBy: User;
 
-  @OneToMany(() => import('./Sensor.entity').Sensor, (sensor) => sensor.station)
-  sensors: any[];
+  @OneToMany(() => Sensor, (sensor) => sensor.station)
+  sensors: Sensor[];
 
-  @OneToMany(() => import('./Alert.entity').Alert, (alert) => alert.station)
-  alerts: any[];
+  @OneToMany(() => Alert, (alert) => alert.station)
+  alerts: Alert[];
 
-  @OneToMany(() => import('./Maintenance.entity').Maintenance, (m) => m.station)
-  maintenances: any[];
+  @OneToMany(() => Maintenance, (maintenance) => maintenance.station)
+  maintenances: Maintenance[];
 
   @CreateDateColumn()
   createdAt: Date;
