@@ -15,6 +15,9 @@ const auth_module_1 = require("./auth/auth.module");
 const realtime_module_1 = require("./realtime/realtime.module");
 const iot_module_1 = require("./iot/iot.module");
 const stations_module_1 = require("./stations/stations.module");
+const sensors_module_1 = require("./sensors/sensors.module");
+const alerts_module_1 = require("./alerts/alerts.module");
+const maintenance_module_1 = require("./maintenance/maintenance.module");
 let AppModule = class AppModule {
 };
 exports.AppModule = AppModule;
@@ -30,6 +33,9 @@ exports.AppModule = AppModule = __decorate([
             realtime_module_1.RealtimeModule,
             iot_module_1.IotModule,
             stations_module_1.StationsModule,
+            sensors_module_1.SensorsModule,
+            alerts_module_1.AlertsModule,
+            maintenance_module_1.MaintenanceModule,
             flows_module_1.FlowsModule,
         ],
     })

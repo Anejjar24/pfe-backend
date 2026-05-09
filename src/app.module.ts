@@ -6,6 +6,9 @@ import { AuthModule } from './auth/auth.module';
 import { RealtimeModule } from './realtime/realtime.module';
 import { IotModule } from './iot/iot.module';
 import { StationsModule } from './stations/stations.module';
+import { SensorsModule } from './sensors/sensors.module';
+import { AlertsModule } from './alerts/alerts.module';
+import { MaintenanceModule } from './maintenance/maintenance.module';
 
 @Module({
   imports: [
@@ -18,6 +21,9 @@ import { StationsModule } from './stations/stations.module';
     RealtimeModule,
     IotModule,
     StationsModule,
+    SensorsModule,
+    AlertsModule,
+    MaintenanceModule,
     FlowsModule,
   ],
 })
