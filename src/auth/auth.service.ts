@@ -5,6 +5,7 @@ import {
   ConflictException,
   Logger,
 } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -22,6 +23,7 @@ export class AuthService {
     private readonly userRepository: Repository<User>,
     private readonly jwtService: JwtService,
     private readonly passwordUtil: PasswordUtil,
+    private readonly configService: ConfigService,
   ) {}
 
   async register(registerDto: RegisterDto) {
@@ -122,6 +124,23 @@ export class AuthService {
     return { message: 'Logged out successfully' };
   }
 
+  async refreshToken(refreshToken: string) {
+    try {
+      const payload = this.jwtService.verify(refreshToken, {
+        secret: this.getRefreshSecret(),
+      });
+      const user = await this.validateUser(payload.sub);
+      const tokens = await this.generateTokens(user);
+
+      return {
+        ...tokens,
+        user: this.getUserResponse(user),
+      };
+    } catch (error) {
+      throw new UnauthorizedException('Invalid refresh token');
+    }
+  }
+
   private async generateTokens(user: User) {
     const payload = {
       sub: user.id,
@@ -134,10 +153,19 @@ export class AuthService {
     });
 
     const refresh_token = this.jwtService.sign(payload, {
+      secret: this.getRefreshSecret(),
       expiresIn: '7d',
     });
 
     return { access_token, refresh_token };
+  }
+
+  private getRefreshSecret(): string {
+    return (
+      this.configService.get<string>('JWT_REFRESH_SECRET') ||
+      this.configService.get<string>('JWT_SECRET') ||
+      'your-secret-key'
+    );
   }
 
   private getUserResponse(user: User) {

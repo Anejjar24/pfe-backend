@@ -15,16 +15,18 @@ var AuthService_1;
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.AuthService = void 0;
 const common_1 = require("@nestjs/common");
+const config_1 = require("@nestjs/config");
 const jwt_1 = require("@nestjs/jwt");
 const typeorm_1 = require("typeorm");
 const typeorm_2 = require("@nestjs/typeorm");
 const User_entity_1 = require("../database/entities/User.entity");
 const password_util_1 = require("./utils/password.util");
 let AuthService = AuthService_1 = class AuthService {
-    constructor(userRepository, jwtService, passwordUtil) {
+    constructor(userRepository, jwtService, passwordUtil, configService) {
         this.userRepository = userRepository;
         this.jwtService = jwtService;
         this.passwordUtil = passwordUtil;
+        this.configService = configService;
         this.logger = new common_1.Logger(AuthService_1.name);
     }
     async register(registerDto) {
@@ -95,6 +97,22 @@ let AuthService = AuthService_1 = class AuthService {
         this.logger.log(`User logged out: ${user.email}`);
         return { message: 'Logged out successfully' };
     }
+    async refreshToken(refreshToken) {
+        try {
+            const payload = this.jwtService.verify(refreshToken, {
+                secret: this.getRefreshSecret(),
+            });
+            const user = await this.validateUser(payload.sub);
+            const tokens = await this.generateTokens(user);
+            return {
+                ...tokens,
+                user: this.getUserResponse(user),
+            };
+        }
+        catch (error) {
+            throw new common_1.UnauthorizedException('Invalid refresh token');
+        }
+    }
     async generateTokens(user) {
         const payload = {
             sub: user.id,
@@ -105,9 +123,15 @@ let AuthService = AuthService_1 = class AuthService {
             expiresIn: '1h',
         });
         const refresh_token = this.jwtService.sign(payload, {
+            secret: this.getRefreshSecret(),
             expiresIn: '7d',
         });
         return { access_token, refresh_token };
+    }
+    getRefreshSecret() {
+        return (this.configService.get('JWT_REFRESH_SECRET') ||
+            this.configService.get('JWT_SECRET') ||
+            'your-secret-key');
     }
     getUserResponse(user) {
         const { password, ...userWithoutPassword } = user;
@@ -120,6 +144,7 @@ exports.AuthService = AuthService = AuthService_1 = __decorate([
     __param(0, (0, typeorm_2.InjectRepository)(User_entity_1.User)),
     __metadata("design:paramtypes", [typeorm_1.Repository,
         jwt_1.JwtService,
-        password_util_1.PasswordUtil])
+        password_util_1.PasswordUtil,
+        config_1.ConfigService])
 ], AuthService);
 //# sourceMappingURL=auth.service.js.map

@@ -1,5 +1,6 @@
 import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
+import { RefreshTokenDto } from './dto/refresh-token.dto';
 import { RegisterDto } from './dto/register.dto';
 import { User } from '../database/entities/User.entity';
 export declare class AuthController {
@@ -48,5 +49,23 @@ export declare class AuthController {
         user: User;
     }): Promise<{
         message: string;
+    }>;
+    refresh(dto: RefreshTokenDto): Promise<{
+        user: {
+            id: string;
+            email: string;
+            firstname: string;
+            lastname: string;
+            role: import("../database/entities/User.entity").UserRole;
+            isActive: boolean;
+            createdAt: Date;
+            updatedAt: Date;
+            stations: any[];
+            assignedMaintenances: any[];
+            createdMaintenances: any[];
+            createdWorkflows: any[];
+        };
+        access_token: string;
+        refresh_token: string;
     }>;
 }

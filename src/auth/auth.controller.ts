@@ -10,6 +10,7 @@ import {
 } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
+import { RefreshTokenDto } from './dto/refresh-token.dto';
 import { RegisterDto } from './dto/register.dto';
 import { JwtGuard } from '../common/guards/jwt.guard';
 import { User } from '../database/entities/User.entity';
@@ -41,5 +42,11 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   async logout(@Request() req: { user: User }) {
     return this.authService.logout(req.user);
+  }
+
+  @Post('refresh')
+  @HttpCode(HttpStatus.OK)
+  async refresh(@Body() dto: RefreshTokenDto) {
+    return this.authService.refreshToken(dto.refresh_token);
   }
 }

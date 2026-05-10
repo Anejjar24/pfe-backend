@@ -1,3 +1,4 @@
+import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { Repository } from 'typeorm';
 import { User, UserRole } from '../database/entities/User.entity';
@@ -8,8 +9,9 @@ export declare class AuthService {
     private readonly userRepository;
     private readonly jwtService;
     private readonly passwordUtil;
+    private readonly configService;
     private readonly logger;
-    constructor(userRepository: Repository<User>, jwtService: JwtService, passwordUtil: PasswordUtil);
+    constructor(userRepository: Repository<User>, jwtService: JwtService, passwordUtil: PasswordUtil, configService: ConfigService);
     register(registerDto: RegisterDto): Promise<{
         access_token: string;
         refresh_token: string;
@@ -50,6 +52,25 @@ export declare class AuthService {
     logout(user: User): Promise<{
         message: string;
     }>;
+    refreshToken(refreshToken: string): Promise<{
+        user: {
+            id: string;
+            email: string;
+            firstname: string;
+            lastname: string;
+            role: UserRole;
+            isActive: boolean;
+            createdAt: Date;
+            updatedAt: Date;
+            stations: any[];
+            assignedMaintenances: any[];
+            createdMaintenances: any[];
+            createdWorkflows: any[];
+        };
+        access_token: string;
+        refresh_token: string;
+    }>;
     private generateTokens;
+    private getRefreshSecret;
     private getUserResponse;
 }
