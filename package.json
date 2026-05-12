@@ -10,7 +10,7 @@
     "lint": "eslint \"src/**/*.ts\"",
     "typeorm": "node_modules/.bin/typeorm-ts-node-commonjs",
     "migration:generate": "node_modules/.bin/typeorm-ts-node-commonjs migration:generate -d src/database/data-source.ts",
-    "migration:run": "node_modules/.bin/typeorm-ts-node-commonjs migration:run -d src/database/data-source.ts",
+    "migration:run": "typeorm-ts-node-commonjs migration:run -d src/database/data-source.ts",
     "migration:revert": "node_modules/.bin/typeorm-ts-node-commonjs migration:revert -d src/database/data-source.ts"
   },
   "dependencies": {
