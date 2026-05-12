@@ -3,6 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { ILike, Repository } from 'typeorm';
 import { Station } from '../database/entities/Station.entity';
 import { User } from '../database/entities/User.entity';
+import { RealtimeService } from '../realtime/realtime.service';
 import { CreateStationDto } from './dto/create-station.dto';
 import { StationQueryDto } from './dto/station-query.dto';
 import { UpdateStationDto } from './dto/update-station.dto';
@@ -12,6 +13,7 @@ export class StationsService {
   constructor(
     @InjectRepository(Station)
     private readonly stationRepository: Repository<Station>,
+    private readonly realtimeService: RealtimeService,
   ) {}
 
   async create(dto: CreateStationDto, user: User) {
@@ -72,7 +74,18 @@ export class StationsService {
     Object.assign(station, dto);
     if (statusChanged) station.lastStatusChange = new Date();
 
-    return this.stationRepository.save(station);
+    const saved = await this.stationRepository.save(station);
+
+    if (statusChanged) {
+      this.realtimeService.broadcastToAll('station-status', {
+        stationId: saved.id,
+        status: saved.status,
+        name: saved.name,
+        timestamp: saved.lastStatusChange,
+      });
+    }
+
+    return saved;
   }
 
   async remove(id: string) {

@@ -7,7 +7,11 @@
     "start:dev": "nest start --watch",
     "build": "nest build",
     "seed": "nest build && node dist/database/seeds/seed.js",
-    "lint": "eslint \"src/**/*.ts\""
+    "lint": "eslint \"src/**/*.ts\"",
+    "typeorm": "node_modules/.bin/typeorm-ts-node-commonjs",
+    "migration:generate": "node_modules/.bin/typeorm-ts-node-commonjs migration:generate -d src/database/data-source.ts",
+    "migration:run": "node_modules/.bin/typeorm-ts-node-commonjs migration:run -d src/database/data-source.ts",
+    "migration:revert": "node_modules/.bin/typeorm-ts-node-commonjs migration:revert -d src/database/data-source.ts"
   },
   "dependencies": {
     "@nestjs/common": "^10.4.15",
@@ -41,6 +45,7 @@
     "@types/bcrypt": "^5.0.2",
     "@types/node": "^20.17.10",
     "@types/passport-jwt": "^4.0.1",
+    "ts-node": "^10.9.2",
     "typescript": "^5.7.2"
   }
 }

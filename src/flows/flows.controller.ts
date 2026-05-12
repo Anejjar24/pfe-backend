@@ -1,9 +1,12 @@
-import { Body, Controller, Delete, Get, Param, Post, Put } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Post, Put, Request, UseGuards } from '@nestjs/common';
+import { User } from '../database/entities/User.entity';
+import { JwtGuard } from '../common/guards/jwt.guard';
 import { CreateFlowDto } from './dto/create-flow.dto';
 import { ExecuteFlowDto } from './dto/execute-flow.dto';
 import { FlowExecutorService } from './flow-executor.service';
 import { FlowsService } from './flows.service';
 
+@UseGuards(JwtGuard)
 @Controller('flows')
 export class FlowsController {
   constructor(
@@ -12,8 +15,8 @@ export class FlowsController {
   ) {}
 
   @Post()
-  create(@Body() dto: CreateFlowDto) {
-    return this.flowsService.create(dto);
+  create(@Body() dto: CreateFlowDto, @Request() req: { user: User }) {
+    return this.flowsService.create(dto, req.user);
   }
 
   @Get()
@@ -27,8 +30,8 @@ export class FlowsController {
   }
 
   @Put(':id')
-  update(@Param('id') id: string, @Body() dto: CreateFlowDto) {
-    return this.flowsService.update(id, dto);
+  update(@Param('id') id: string, @Body() dto: CreateFlowDto, @Request() req: { user: User }) {
+    return this.flowsService.update(id, dto, req.user);
   }
 
   @Delete(':id')

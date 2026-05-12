@@ -1,56 +1,60 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
 import { randomUUID } from 'crypto';
-import { FlowRecord } from '../database/schemas/flow.schema';
+import { Repository } from 'typeorm';
+import { Workflow } from '../database/entities/Workflow.entity';
+import { User } from '../database/entities/User.entity';
 import { CreateFlowDto } from './dto/create-flow.dto';
 import { FlowValidatorService } from './flow-validator.service';
 
 @Injectable()
 export class FlowsService {
-  private readonly flows = new Map<string, FlowRecord>();
+  constructor(
+    @InjectRepository(Workflow)
+    private readonly workflowRepository: Repository<Workflow>,
+    private readonly validator: FlowValidatorService,
+  ) {}
 
-  constructor(private readonly validator: FlowValidatorService) {}
-
-  create(dto: CreateFlowDto) {
+  async create(dto: CreateFlowDto, user: User) {
     this.validator.validate(dto.graph);
-    const now = new Date().toISOString();
     const id = dto.graph.id || randomUUID();
-    const flow: FlowRecord = {
+    const workflow = this.workflowRepository.create({
       id,
-      name: dto.name || dto.graph.name || 'Untitled workflow',
+      name: dto.name || (dto.graph.name as string) || 'Untitled workflow',
       graph: { ...dto.graph, id },
-      createdAt: now,
-      updatedAt: now,
-    };
-    this.flows.set(id, flow);
-    return flow;
+      createdBy: user,
+    });
+    return this.workflowRepository.save(workflow);
   }
 
-  update(id: string, dto: CreateFlowDto) {
-    const current = this.findOne(id);
+  async findAll() {
+    return this.workflowRepository.find({
+      relations: ['createdBy'],
+      order: { createdAt: 'DESC' },
+    });
+  }
+
+  async findOne(id: string) {
+    const workflow = await this.workflowRepository.findOne({
+      where: { id },
+      relations: ['createdBy'],
+    });
+    if (!workflow) throw new NotFoundException(`Workflow "${id}" was not found.`);
+    return workflow;
+  }
+
+  async update(id: string, dto: CreateFlowDto, user?: User) {
+    const workflow = await this.findOne(id);
     this.validator.validate(dto.graph);
-    const flow: FlowRecord = {
-      ...current,
-      name: dto.name || current.name,
-      graph: { ...dto.graph, id },
-      updatedAt: new Date().toISOString(),
-    };
-    this.flows.set(id, flow);
-    return flow;
+    workflow.name = dto.name || workflow.name;
+    workflow.graph = { ...dto.graph, id };
+    if (user) workflow.updatedBy = user;
+    return this.workflowRepository.save(workflow);
   }
 
-  findAll() {
-    return Array.from(this.flows.values());
-  }
-
-  findOne(id: string) {
-    const flow = this.flows.get(id);
-    if (!flow) throw new NotFoundException(`Workflow "${id}" was not found.`);
-    return flow;
-  }
-
-  remove(id: string) {
-    this.findOne(id);
-    this.flows.delete(id);
+  async remove(id: string) {
+    const workflow = await this.findOne(id);
+    await this.workflowRepository.remove(workflow);
     return { deleted: true, id };
   }
 }
