@@ -14,6 +14,7 @@ var __param = (this && this.__param) || function (paramIndex, decorator) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.FlowsController = void 0;
 const common_1 = require("@nestjs/common");
+const jwt_guard_1 = require("../common/guards/jwt.guard");
 const create_flow_dto_1 = require("./dto/create-flow.dto");
 const execute_flow_dto_1 = require("./dto/execute-flow.dto");
 const flow_executor_service_1 = require("./flow-executor.service");
@@ -23,8 +24,8 @@ let FlowsController = class FlowsController {
         this.flowsService = flowsService;
         this.executorService = executorService;
     }
-    create(dto) {
-        return this.flowsService.create(dto);
+    create(dto, req) {
+        return this.flowsService.create(dto, req.user);
     }
     findAll() {
         return this.flowsService.findAll();
@@ -32,8 +33,8 @@ let FlowsController = class FlowsController {
     findOne(id) {
         return this.flowsService.findOne(id);
     }
-    update(id, dto) {
-        return this.flowsService.update(id, dto);
+    update(id, dto, req) {
+        return this.flowsService.update(id, dto, req.user);
     }
     remove(id) {
         return this.flowsService.remove(id);
@@ -46,8 +47,9 @@ exports.FlowsController = FlowsController;
 __decorate([
     (0, common_1.Post)(),
     __param(0, (0, common_1.Body)()),
+    __param(1, (0, common_1.Request)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [create_flow_dto_1.CreateFlowDto]),
+    __metadata("design:paramtypes", [create_flow_dto_1.CreateFlowDto, Object]),
     __metadata("design:returntype", void 0)
 ], FlowsController.prototype, "create", null);
 __decorate([
@@ -67,8 +69,9 @@ __decorate([
     (0, common_1.Put)(':id'),
     __param(0, (0, common_1.Param)('id')),
     __param(1, (0, common_1.Body)()),
+    __param(2, (0, common_1.Request)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String, create_flow_dto_1.CreateFlowDto]),
+    __metadata("design:paramtypes", [String, create_flow_dto_1.CreateFlowDto, Object]),
     __metadata("design:returntype", void 0)
 ], FlowsController.prototype, "update", null);
 __decorate([
@@ -86,6 +89,7 @@ __decorate([
     __metadata("design:returntype", void 0)
 ], FlowsController.prototype, "execute", null);
 exports.FlowsController = FlowsController = __decorate([
+    (0, common_1.UseGuards)(jwt_guard_1.JwtGuard),
     (0, common_1.Controller)('flows'),
     __metadata("design:paramtypes", [flows_service_1.FlowsService,
         flow_executor_service_1.FlowExecutorService])

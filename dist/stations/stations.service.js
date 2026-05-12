@@ -17,9 +17,11 @@ const common_1 = require("@nestjs/common");
 const typeorm_1 = require("@nestjs/typeorm");
 const typeorm_2 = require("typeorm");
 const Station_entity_1 = require("../database/entities/Station.entity");
+const realtime_service_1 = require("../realtime/realtime.service");
 let StationsService = class StationsService {
-    constructor(stationRepository) {
+    constructor(stationRepository, realtimeService) {
         this.stationRepository = stationRepository;
+        this.realtimeService = realtimeService;
     }
     async create(dto, user) {
         const station = this.stationRepository.create({
@@ -68,11 +70,21 @@ let StationsService = class StationsService {
     }
     async update(id, dto) {
         const station = await this.findOne(id);
-        const statusChanged = dto.status && dto.status !== station.status;
+        const previousStatus = station.status;
         Object.assign(station, dto);
-        if (statusChanged)
+        if (dto.status && dto.status !== previousStatus) {
             station.lastStatusChange = new Date();
-        return this.stationRepository.save(station);
+        }
+        const saved = await this.stationRepository.save(station);
+        if (dto.status !== undefined) {
+            this.realtimeService.broadcastToAll('station-status', {
+                stationId: saved.id,
+                status: saved.status,
+                name: saved.name,
+                timestamp: saved.lastStatusChange ?? new Date(),
+            });
+        }
+        return saved;
     }
     async remove(id) {
         const station = await this.findOne(id);
@@ -84,6 +96,7 @@ exports.StationsService = StationsService;
 exports.StationsService = StationsService = __decorate([
     (0, common_1.Injectable)(),
     __param(0, (0, typeorm_1.InjectRepository)(Station_entity_1.Station)),
-    __metadata("design:paramtypes", [typeorm_2.Repository])
+    __metadata("design:paramtypes", [typeorm_2.Repository,
+        realtime_service_1.RealtimeService])
 ], StationsService);
 //# sourceMappingURL=stations.service.js.map

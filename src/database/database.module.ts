@@ -36,11 +36,9 @@ import { DatabaseService } from './database.service';
         synchronize: configService.get('NODE_ENV') !== 'production',
         logging: configService.get('NODE_ENV') === 'development',
         subscribers: [],
-        migrations: [
-          configService.get('NODE_ENV') === 'production'
-            ? 'dist/database/migrations/*.js'
-            : 'src/database/migrations/*.ts',
-        ],
+        migrations: configService.get('NODE_ENV') === 'production'
+          ? ['dist/database/migrations/*.js']
+          : [],
         migrationsRun: false,
       }),
       inject: [ConfigService],

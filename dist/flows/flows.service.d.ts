@@ -1,16 +1,18 @@
-import { FlowRecord } from '../database/schemas/flow.schema';
+import { Repository } from 'typeorm';
+import { Workflow } from '../database/entities/Workflow.entity';
+import { User } from '../database/entities/User.entity';
 import { CreateFlowDto } from './dto/create-flow.dto';
 import { FlowValidatorService } from './flow-validator.service';
 export declare class FlowsService {
+    private readonly workflowRepository;
     private readonly validator;
-    private readonly flows;
-    constructor(validator: FlowValidatorService);
-    create(dto: CreateFlowDto): FlowRecord;
-    update(id: string, dto: CreateFlowDto): FlowRecord;
-    findAll(): FlowRecord[];
-    findOne(id: string): FlowRecord;
-    remove(id: string): {
+    constructor(workflowRepository: Repository<Workflow>, validator: FlowValidatorService);
+    create(dto: CreateFlowDto, user: User): Promise<Workflow>;
+    findAll(): Promise<Workflow[]>;
+    findOne(id: string): Promise<Workflow>;
+    update(id: string, dto: CreateFlowDto, user?: User): Promise<Workflow>;
+    remove(id: string): Promise<{
         deleted: boolean;
         id: string;
-    };
+    }>;
 }

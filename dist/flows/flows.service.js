@@ -8,60 +8,68 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
 var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
+var __param = (this && this.__param) || function (paramIndex, decorator) {
+    return function (target, key) { decorator(target, key, paramIndex); }
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.FlowsService = void 0;
 const common_1 = require("@nestjs/common");
+const typeorm_1 = require("@nestjs/typeorm");
 const crypto_1 = require("crypto");
+const typeorm_2 = require("typeorm");
+const Workflow_entity_1 = require("../database/entities/Workflow.entity");
 const flow_validator_service_1 = require("./flow-validator.service");
 let FlowsService = class FlowsService {
-    constructor(validator) {
+    constructor(workflowRepository, validator) {
+        this.workflowRepository = workflowRepository;
         this.validator = validator;
-        this.flows = new Map();
     }
-    create(dto) {
+    async create(dto, user) {
         this.validator.validate(dto.graph);
-        const now = new Date().toISOString();
         const id = dto.graph.id || (0, crypto_1.randomUUID)();
-        const flow = {
+        const workflow = this.workflowRepository.create({
             id,
             name: dto.name || dto.graph.name || 'Untitled workflow',
             graph: { ...dto.graph, id },
-            createdAt: now,
-            updatedAt: now,
-        };
-        this.flows.set(id, flow);
-        return flow;
+            createdBy: user,
+        });
+        return this.workflowRepository.save(workflow);
     }
-    update(id, dto) {
-        const current = this.findOne(id);
-        this.validator.validate(dto.graph);
-        const flow = {
-            ...current,
-            name: dto.name || current.name,
-            graph: { ...dto.graph, id },
-            updatedAt: new Date().toISOString(),
-        };
-        this.flows.set(id, flow);
-        return flow;
+    async findAll() {
+        return this.workflowRepository.find({
+            relations: ['createdBy'],
+            order: { createdAt: 'DESC' },
+        });
     }
-    findAll() {
-        return Array.from(this.flows.values());
-    }
-    findOne(id) {
-        const flow = this.flows.get(id);
-        if (!flow)
+    async findOne(id) {
+        const workflow = await this.workflowRepository.findOne({
+            where: { id },
+            relations: ['createdBy'],
+        });
+        if (!workflow)
             throw new common_1.NotFoundException(`Workflow "${id}" was not found.`);
-        return flow;
+        return workflow;
     }
-    remove(id) {
-        this.findOne(id);
-        this.flows.delete(id);
+    async update(id, dto, user) {
+        const workflow = await this.findOne(id);
+        this.validator.validate(dto.graph);
+        workflow.name = dto.name || workflow.name;
+        workflow.graph = { ...dto.graph, id };
+        if (user)
+            workflow.updatedBy = user;
+        return this.workflowRepository.save(workflow);
+    }
+    async remove(id) {
+        const workflow = await this.findOne(id);
+        await this.workflowRepository.remove(workflow);
         return { deleted: true, id };
     }
 };
 exports.FlowsService = FlowsService;
 exports.FlowsService = FlowsService = __decorate([
     (0, common_1.Injectable)(),
-    __metadata("design:paramtypes", [flow_validator_service_1.FlowValidatorService])
+    __param(0, (0, typeorm_1.InjectRepository)(Workflow_entity_1.Workflow)),
+    __metadata("design:paramtypes", [typeorm_2.Repository,
+        flow_validator_service_1.FlowValidatorService])
 ], FlowsService);
 //# sourceMappingURL=flows.service.js.map

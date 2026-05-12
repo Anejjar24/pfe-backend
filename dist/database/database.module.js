@@ -48,7 +48,9 @@ exports.DatabaseModule = DatabaseModule = __decorate([
                     synchronize: configService.get('NODE_ENV') !== 'production',
                     logging: configService.get('NODE_ENV') === 'development',
                     subscribers: [],
-                    migrations: ['src/database/migrations/*.ts'],
+                    migrations: configService.get('NODE_ENV') === 'production'
+                        ? ['dist/database/migrations/*.js']
+                        : [],
                     migrationsRun: false,
                 }),
                 inject: [config_1.ConfigService],

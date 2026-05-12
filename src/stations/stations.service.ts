@@ -69,19 +69,24 @@ export class StationsService {
 
   async update(id: string, dto: UpdateStationDto) {
     const station = await this.findOne(id);
-    const statusChanged = dto.status && dto.status !== station.status;
+    const previousStatus = station.status;
 
     Object.assign(station, dto);
-    if (statusChanged) station.lastStatusChange = new Date();
+
+    if (dto.status && dto.status !== previousStatus) {
+      station.lastStatusChange = new Date();
+    }
 
     const saved = await this.stationRepository.save(station);
 
-    if (statusChanged) {
+    // Emit whenever a status field is present in the PATCH body so all
+    // clients stay in sync regardless of whether the value actually changed.
+    if (dto.status !== undefined) {
       this.realtimeService.broadcastToAll('station-status', {
         stationId: saved.id,
         status: saved.status,
         name: saved.name,
-        timestamp: saved.lastStatusChange,
+        timestamp: saved.lastStatusChange ?? new Date(),
       });
     }
 
