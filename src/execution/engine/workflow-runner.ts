@@ -57,7 +57,8 @@ export class WorkflowRunner {
   }
 
   private filterDecisionEdges(node: WorkflowNode, output: unknown, edges: WorkflowEdge[]) {
-    if (node.type !== 'decision' || typeof output !== 'object' || output === null || !('branch' in output)) {
+    // Any handler can return a { branch } field to drive port-based routing
+    if (typeof output !== 'object' || output === null || !('branch' in output)) {
       return edges;
     }
 

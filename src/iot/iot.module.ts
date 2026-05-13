@@ -14,6 +14,6 @@ import { MqttClient } from './mqtt/mqtt.client';
     AlertsModule,
   ],
   providers: [IotService, MqttClient],
-  exports: [IotService],
+  exports: [IotService, MqttClient],
 })
 export class IotModule {}

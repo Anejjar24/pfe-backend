@@ -26,7 +26,7 @@ exports.IotModule = IotModule = __decorate([
             alerts_module_1.AlertsModule,
         ],
         providers: [iot_service_1.IotService, mqtt_client_1.MqttClient],
-        exports: [iot_service_1.IotService],
+        exports: [iot_service_1.IotService, mqtt_client_1.MqttClient],
     })
 ], IotModule);
 //# sourceMappingURL=iot.module.js.map

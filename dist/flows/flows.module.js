@@ -9,7 +9,11 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.FlowsModule = void 0;
 const common_1 = require("@nestjs/common");
 const typeorm_1 = require("@nestjs/typeorm");
+const alerts_module_1 = require("../alerts/alerts.module");
+const Sensor_entity_1 = require("../database/entities/Sensor.entity");
 const Workflow_entity_1 = require("../database/entities/Workflow.entity");
+const iot_module_1 = require("../iot/iot.module");
+const stations_module_1 = require("../stations/stations.module");
 const node_executor_1 = require("../execution/engine/node-executor");
 const workflow_runner_1 = require("../execution/engine/workflow-runner");
 const flow_executor_service_1 = require("./flow-executor.service");
@@ -21,7 +25,12 @@ let FlowsModule = class FlowsModule {
 exports.FlowsModule = FlowsModule;
 exports.FlowsModule = FlowsModule = __decorate([
     (0, common_1.Module)({
-        imports: [typeorm_1.TypeOrmModule.forFeature([Workflow_entity_1.Workflow])],
+        imports: [
+            typeorm_1.TypeOrmModule.forFeature([Workflow_entity_1.Workflow, Sensor_entity_1.Sensor]),
+            alerts_module_1.AlertsModule,
+            iot_module_1.IotModule,
+            stations_module_1.StationsModule,
+        ],
         controllers: [flows_controller_1.FlowsController],
         providers: [
             flow_executor_service_1.FlowExecutorService,

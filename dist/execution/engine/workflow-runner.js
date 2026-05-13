@@ -62,7 +62,7 @@ let WorkflowRunner = class WorkflowRunner {
         }, new Map());
     }
     filterDecisionEdges(node, output, edges) {
-        if (node.type !== 'decision' || typeof output !== 'object' || output === null || !('branch' in output)) {
+        if (typeof output !== 'object' || output === null || !('branch' in output)) {
             return edges;
         }
         const branch = String(output.branch);

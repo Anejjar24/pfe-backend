@@ -1,4 +1,4 @@
-export type WorkflowNodeType = 'input' | 'output' | 'action' | 'decision' | 'delay' | 'api' | 'notification';
+export type WorkflowNodeType = 'input' | 'output' | 'action' | 'decision' | 'delay' | 'api' | 'notification' | 'sensor-read' | 'threshold-check' | 'pump-control' | 'alert-trigger' | 'mqtt-publish' | 'station-control' | 'http-request';
 export interface WorkflowNode {
     id: string;
     type: WorkflowNodeType;

@@ -5,7 +5,16 @@ export type WorkflowNodeType =
   | 'decision'
   | 'delay'
   | 'api'
-  | 'notification';
+  | 'notification'
+  // Industrial blocks
+  | 'sensor-read'
+  | 'threshold-check'
+  | 'pump-control'
+  | 'alert-trigger'
+  | 'mqtt-publish'
+  | 'station-control'
+  // Integration blocks
+  | 'http-request';
 
 export interface WorkflowNode {
   id: string;
