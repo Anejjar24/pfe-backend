@@ -18,6 +18,7 @@ const stations_module_1 = require("./stations/stations.module");
 const sensors_module_1 = require("./sensors/sensors.module");
 const alerts_module_1 = require("./alerts/alerts.module");
 const maintenance_module_1 = require("./maintenance/maintenance.module");
+const analytics_module_1 = require("./analytics/analytics.module");
 let AppModule = class AppModule {
 };
 exports.AppModule = AppModule;
@@ -37,6 +38,7 @@ exports.AppModule = AppModule = __decorate([
             alerts_module_1.AlertsModule,
             maintenance_module_1.MaintenanceModule,
             flows_module_1.FlowsModule,
+            analytics_module_1.AnalyticsModule,
         ],
     })
 ], AppModule);

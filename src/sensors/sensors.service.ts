@@ -1,6 +1,8 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { ILike, Repository } from 'typeorm';
+import { CACHE_MANAGER } from '@nestjs/cache-manager';
+import { Cache } from 'cache-manager';
 import { Sensor } from '../database/entities/Sensor.entity';
 import { SensorData } from '../database/entities/SensorData.entity';
 import { Station } from '../database/entities/Station.entity';
@@ -8,8 +10,14 @@ import { CreateSensorDto } from './dto/create-sensor.dto';
 import { SensorQueryDto } from './dto/sensor-query.dto';
 import { UpdateSensorDto } from './dto/update-sensor.dto';
 
+const SENSOR_LIST_TTL = 60; // seconds
+const SENSOR_LIST_PREFIX = 'sensors:list:';
+
 @Injectable()
 export class SensorsService {
+  /** Tracks active list cache keys so we can invalidate them on mutation */
+  private readonly listCacheKeys = new Set<string>();
+
   constructor(
     @InjectRepository(Sensor)
     private readonly sensorRepository: Repository<Sensor>,
@@ -17,6 +25,8 @@ export class SensorsService {
     private readonly sensorDataRepository: Repository<SensorData>,
     @InjectRepository(Station)
     private readonly stationRepository: Repository<Station>,
+    @Inject(CACHE_MANAGER)
+    private readonly cacheManager: Cache,
   ) {}
 
   async create(dto: CreateSensorDto) {
@@ -25,10 +35,16 @@ export class SensorsService {
 
     const { stationId, ...sensorPayload } = dto;
     const sensor = this.sensorRepository.create({ ...sensorPayload, station });
-    return this.sensorRepository.save(sensor);
+    const saved = await this.sensorRepository.save(sensor);
+    await this.clearListCache();
+    return saved;
   }
 
-  async findAll(query: SensorQueryDto) {
+  async findAll(query: SensorQueryDto): Promise<{ data: Sensor[]; meta: { total: number; page: number; limit: number; pages: number } }> {
+    const cacheKey = `${SENSOR_LIST_PREFIX}${JSON.stringify(query)}`;
+    const cached = await this.cacheManager.get<{ data: Sensor[]; meta: { total: number; page: number; limit: number; pages: number } }>(cacheKey);
+    if (cached) return cached;
+
     const page = query.page ?? 1;
     const limit = query.limit ?? 20;
     const where: Record<string, any> = {};
@@ -46,7 +62,12 @@ export class SensorsService {
       take: limit,
     });
 
-    return { data, meta: { total, page, limit, pages: Math.ceil(total / limit) } };
+    const result = { data, meta: { total, page, limit, pages: Math.ceil(total / limit) } };
+
+    await this.cacheManager.set(cacheKey, result, { ttl: SENSOR_LIST_TTL });
+    this.listCacheKeys.add(cacheKey);
+
+    return result;
   }
 
   async findOne(id: string) {
@@ -69,12 +90,15 @@ export class SensorsService {
       sensor.station = station;
     }
 
-    return this.sensorRepository.save(sensor);
+    const saved = await this.sensorRepository.save(sensor);
+    await this.clearListCache();
+    return saved;
   }
 
   async remove(id: string) {
     const sensor = await this.findOne(id);
     await this.sensorRepository.remove(sensor);
+    await this.clearListCache();
     return { deleted: true, id };
   }
 
@@ -85,5 +109,12 @@ export class SensorsService {
       order: { timestamp: 'DESC' },
       take: limit,
     });
+  }
+
+  private async clearListCache(): Promise<void> {
+    for (const key of this.listCacheKeys) {
+      await this.cacheManager.del(key);
+    }
+    this.listCacheKeys.clear();
   }
 }

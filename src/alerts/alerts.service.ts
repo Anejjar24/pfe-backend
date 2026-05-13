@@ -6,6 +6,7 @@ import { Sensor } from '../database/entities/Sensor.entity';
 import { Station } from '../database/entities/Station.entity';
 import { User } from '../database/entities/User.entity';
 import { RealtimeService } from '../realtime/realtime.service';
+import { NotificationsService } from '../notifications/notifications.service';
 import { AlertQueryDto } from './dto/alert-query.dto';
 import { CreateAlertDto } from './dto/create-alert.dto';
 
@@ -19,6 +20,7 @@ export class AlertsService {
     @InjectRepository(Sensor)
     private readonly sensorRepository: Repository<Sensor>,
     private readonly realtimeService: RealtimeService,
+    private readonly notificationsService: NotificationsService,
   ) {}
 
   async create(dto: CreateAlertDto) {
@@ -45,6 +47,7 @@ export class AlertsService {
       }),
     );
 
+    // Broadcast real-time alert event
     this.realtimeService.broadcastToAll('alert-created', {
       id: alert.id,
       alertId: alert.id,
@@ -55,6 +58,11 @@ export class AlertsService {
       sensorId: sensor?.id,
       timestamp: alert.createdAt,
     });
+
+    // Create in-app notification + email for critical alerts (fire-and-forget)
+    this.notificationsService
+      .notifyAlertCreated(alert, station, sensor)
+      .catch(() => void 0); // never let notification failure break alert creation
 
     return alert;
   }
