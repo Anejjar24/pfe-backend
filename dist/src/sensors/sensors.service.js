@@ -105,6 +105,34 @@ let SensorsService = class SensorsService {
             take: limit,
         });
     }
+    async injectReading(sensorId, value) {
+        const sensor = await this.sensorRepository.findOne({
+            where: { id: sensorId },
+            relations: ['station'],
+        });
+        if (!sensor)
+            throw new common_1.NotFoundException(`Sensor "${sensorId}" was not found`);
+        sensor.lastReading = value;
+        sensor.lastReadingAt = new Date();
+        await this.sensorRepository.save(sensor);
+        await this.sensorDataRepository.save(this.sensorDataRepository.create({
+            sensor,
+            value,
+            timestamp: sensor.lastReadingAt,
+            source: 'manual',
+            qualityFlags: {},
+        }));
+        await this.clearListCache();
+        return {
+            sensorId: sensor.id,
+            name: sensor.name,
+            value: sensor.lastReading,
+            unit: sensor.unit,
+            timestamp: sensor.lastReadingAt,
+            status: sensor.status,
+            station: sensor.station ? { id: sensor.station.id, name: sensor.station.name } : null,
+        };
+    }
     async clearListCache() {
         for (const key of this.listCacheKeys) {
             await this.cacheManager.del(key);

@@ -107,6 +107,18 @@ let AuthService = AuthService_1 = class AuthService {
             throw new common_1.UnauthorizedException('Invalid refresh token');
         }
     }
+    async updateProfile(user, dto) {
+        if (dto.firstname !== undefined)
+            user.firstname = dto.firstname;
+        if (dto.lastname !== undefined)
+            user.lastname = dto.lastname;
+        if (dto.password !== undefined) {
+            user.password = await this.passwordUtil.hashPassword(dto.password);
+        }
+        const saved = await this.userRepository.save(user);
+        this.logger.log(`Profile updated: ${user.email}`);
+        return this.getUserResponse(saved);
+    }
     async generateTokens(user) {
         const payload = { sub: user.id, email: user.email, role: user.role };
         const access_token = this.jwtService.sign(payload, { expiresIn: '1h' });

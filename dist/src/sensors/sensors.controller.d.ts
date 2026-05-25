@@ -19,4 +19,16 @@ export declare class SensorsController {
     create(dto: CreateSensorDto): Promise<import("../database/entities/Sensor.entity").Sensor>;
     update(id: string, dto: UpdateSensorDto): Promise<import("../database/entities/Sensor.entity").Sensor>;
     remove(id: string): Promise<void>;
+    injectReading(id: string, value: number): Promise<{
+        sensorId: string;
+        name: string;
+        value: number;
+        unit: string;
+        timestamp: Date;
+        status: import("../database/entities/Sensor.entity").SensorStatus;
+        station: {
+            id: string;
+            name: string;
+        } | null;
+    }>;
 }

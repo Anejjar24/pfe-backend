@@ -1,12 +1,13 @@
 import {
-  Controller,
-  Post,
   Body,
+  Controller,
+  Get,
   HttpCode,
   HttpStatus,
-  UseGuards,
-  Get,
+  Patch,
+  Post,
   Request,
+  UseGuards,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { AuthService } from './auth.service';
@@ -14,6 +15,7 @@ import { LoginDto } from './dto/login.dto';
 import { LogoutDto } from './dto/logout.dto';
 import { RefreshTokenDto } from './dto/refresh-token.dto';
 import { RegisterDto } from './dto/register.dto';
+import { UpdateProfileDto } from './dto/update-profile.dto';
 import { JwtGuard } from '../common/guards/jwt.guard';
 import { User } from '../database/entities/User.entity';
 
@@ -67,5 +69,17 @@ export class AuthController {
   @ApiResponse({ status: 401, description: 'Invalid or revoked refresh token' })
   async refresh(@Body() dto: RefreshTokenDto) {
     return this.authService.refreshToken(dto.refresh_token);
+  }
+
+  @Patch('profile')
+  @UseGuards(JwtGuard)
+  @ApiBearerAuth('access-token')
+  @ApiOperation({ summary: 'Update own profile — firstname, lastname, or password' })
+  @ApiResponse({ status: 200, description: 'Updated user (no password hash)' })
+  async updateProfile(
+    @Request() req: { user: User },
+    @Body() dto: UpdateProfileDto,
+  ) {
+    return this.authService.updateProfile(req.user, dto);
   }
 }

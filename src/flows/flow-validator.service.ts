@@ -1,7 +1,15 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { WorkflowGraph } from '../common/types/workflow.types';
 
-const validTypes = new Set(['input', 'output', 'action', 'decision', 'delay', 'api', 'notification']);
+const validTypes = new Set([
+  // Generic blocks
+  'input', 'output', 'action', 'decision', 'delay', 'api', 'notification',
+  // Industrial blocks
+  'sensor-read', 'threshold-check', 'alert-trigger',
+  'mqtt-publish', 'pump-control', 'station-control',
+  // Integration blocks
+  'http-request',
+]);
 
 @Injectable()
 export class FlowValidatorService {

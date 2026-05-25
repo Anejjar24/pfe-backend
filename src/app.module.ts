@@ -2,6 +2,8 @@ import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { CacheModule } from '@nestjs/cache-manager';
 import * as redisStore from 'cache-manager-redis-store';
+import { AppController } from './app.controller';
+import { UsersModule } from './users/users.module';
 import { FlowsModule } from './flows/flows.module';
 import { DatabaseModule } from './database/database.module';
 import { AuthModule } from './auth/auth.module';
@@ -15,6 +17,7 @@ import { AnalyticsModule } from './analytics/analytics.module';
 import { NotificationsModule } from './notifications/notifications.module';
 
 @Module({
+  controllers: [AppController],
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
@@ -51,6 +54,7 @@ import { NotificationsModule } from './notifications/notifications.module';
     FlowsModule,
     AnalyticsModule,
     NotificationsModule,
+    UsersModule,
   ],
 })
 export class AppModule {}

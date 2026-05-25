@@ -8,7 +8,12 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.FlowValidatorService = void 0;
 const common_1 = require("@nestjs/common");
-const validTypes = new Set(['input', 'output', 'action', 'decision', 'delay', 'api', 'notification']);
+const validTypes = new Set([
+    'input', 'output', 'action', 'decision', 'delay', 'api', 'notification',
+    'sensor-read', 'threshold-check', 'alert-trigger',
+    'mqtt-publish', 'pump-control', 'station-control',
+    'http-request',
+]);
 let FlowValidatorService = class FlowValidatorService {
     validate(graph) {
         if (!graph || !Array.isArray(graph.nodes) || !Array.isArray(graph.edges)) {

@@ -11,6 +11,8 @@ const common_1 = require("@nestjs/common");
 const config_1 = require("@nestjs/config");
 const cache_manager_1 = require("@nestjs/cache-manager");
 const redisStore = require("cache-manager-redis-store");
+const app_controller_1 = require("./app.controller");
+const users_module_1 = require("./users/users.module");
 const flows_module_1 = require("./flows/flows.module");
 const database_module_1 = require("./database/database.module");
 const auth_module_1 = require("./auth/auth.module");
@@ -27,6 +29,7 @@ let AppModule = class AppModule {
 exports.AppModule = AppModule;
 exports.AppModule = AppModule = __decorate([
     (0, common_1.Module)({
+        controllers: [app_controller_1.AppController],
         imports: [
             config_1.ConfigModule.forRoot({
                 isGlobal: true,
@@ -60,6 +63,7 @@ exports.AppModule = AppModule = __decorate([
             flows_module_1.FlowsModule,
             analytics_module_1.AnalyticsModule,
             notifications_module_1.NotificationsModule,
+            users_module_1.UsersModule,
         ],
     })
 ], AppModule);

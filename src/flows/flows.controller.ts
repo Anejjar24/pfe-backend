@@ -59,7 +59,11 @@ export class FlowsController {
   @Post('execute')
   @ApiOperation({ summary: 'Execute a workflow graph directly (ad-hoc run)' })
   @ApiResponse({ status: 201, description: 'Execution result with per-node outputs' })
-  execute(@Body() dto: ExecuteFlowDto) {
-    return this.executorService.execute(dto.graph, dto.input);
+  execute(@Body() dto: ExecuteFlowDto, @Request() req: { user: User }) {
+    return this.executorService.execute(dto.graph, dto.input ?? {}, {
+      workflowId: dto.graph.id,
+      user: req.user,
+      triggerSource: 'manual',
+    });
   }
 }

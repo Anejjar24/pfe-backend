@@ -4,7 +4,9 @@ import { Repository } from 'typeorm';
 import { AlertsService } from '../../alerts/alerts.service';
 import { WorkflowNode } from '../../common/types/workflow.types';
 import { Sensor } from '../../database/entities/Sensor.entity';
+import { Notification } from '../../database/entities/Notification.entity';
 import { MqttClient } from '../../iot/mqtt/mqtt.client';
+import { RealtimeService } from '../../realtime/realtime.service';
 import { StationsService } from '../../stations/stations.service';
 import { AlertTriggerHandler } from '../handlers/alert-trigger.handler';
 import { ActionHandler } from '../handlers/action.handler';
@@ -12,6 +14,7 @@ import { DecisionHandler } from '../handlers/decision.handler';
 import { HttpRequestHandler } from '../handlers/http-request.handler';
 import { InputHandler } from '../handlers/input.handler';
 import { MqttPublishHandler } from '../handlers/mqtt-publish.handler';
+import { NotificationHandler } from '../handlers/notification.handler';
 import { OutputHandler } from '../handlers/output.handler';
 import { PumpControlHandler } from '../handlers/pump-control.handler';
 import { SensorReadHandler } from '../handlers/sensor-read.handler';
@@ -33,18 +36,22 @@ export class NodeExecutor {
   private readonly sensorReadHandler: SensorReadHandler;
   private readonly alertTriggerHandler: AlertTriggerHandler;
   private readonly mqttPublishHandler: MqttPublishHandler;
+  private readonly notificationHandler: NotificationHandler;
   private readonly pumpControlHandler: PumpControlHandler;
   private readonly stationControlHandler: StationControlHandler;
 
   constructor(
     @InjectRepository(Sensor) sensorRepository: Repository<Sensor>,
+    @InjectRepository(Notification) notificationRepository: Repository<Notification>,
     alertsService: AlertsService,
     mqttClient: MqttClient,
+    realtimeService: RealtimeService,
     stationsService: StationsService,
   ) {
     this.sensorReadHandler = new SensorReadHandler(sensorRepository);
     this.alertTriggerHandler = new AlertTriggerHandler(alertsService);
     this.mqttPublishHandler = new MqttPublishHandler(mqttClient);
+    this.notificationHandler = new NotificationHandler(notificationRepository, realtimeService);
     this.pumpControlHandler = new PumpControlHandler(mqttClient);
     this.stationControlHandler = new StationControlHandler(stationsService);
   }
@@ -57,8 +64,8 @@ export class NodeExecutor {
       case 'decision':    return this.decisionHandler.execute(node, input);
       case 'output':      return this.outputHandler.execute(node, input);
       case 'delay':       return this.handleDelay(node, input);
-      case 'api':         return { request: node.data, input, mocked: true };
-      case 'notification': return { notified: true, channel: node.data?.channel, input };
+      case 'api':         return this.httpRequestHandler.execute(node, input);
+      case 'notification': return this.notificationHandler.execute(node, input);
 
       // Industrial blocks
       case 'sensor-read':      return this.sensorReadHandler.execute(node);

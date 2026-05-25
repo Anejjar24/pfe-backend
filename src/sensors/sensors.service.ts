@@ -111,6 +111,48 @@ export class SensorsService {
     });
   }
 
+  /**
+   * Manually inject a sensor reading — same effect as an MQTT message.
+   * Updates lastReading / lastReadingAt on the sensor row, persists a
+   * SensorData record, and returns the updated sensor.
+   * Useful for testing flows in the Automation Builder without needing a
+   * live MQTT device.
+   */
+  async injectReading(sensorId: string, value: number) {
+    const sensor = await this.sensorRepository.findOne({
+      where: { id: sensorId },
+      relations: ['station'],
+    });
+    if (!sensor) throw new NotFoundException(`Sensor "${sensorId}" was not found`);
+
+    sensor.lastReading = value;
+    sensor.lastReadingAt = new Date();
+
+    await this.sensorRepository.save(sensor);
+
+    await this.sensorDataRepository.save(
+      this.sensorDataRepository.create({
+        sensor,
+        value,
+        timestamp: sensor.lastReadingAt,
+        source: 'manual',
+        qualityFlags: {},
+      }),
+    );
+
+    await this.clearListCache();
+
+    return {
+      sensorId: sensor.id,
+      name: sensor.name,
+      value: sensor.lastReading,
+      unit: sensor.unit,
+      timestamp: sensor.lastReadingAt,
+      status: sensor.status,
+      station: sensor.station ? { id: sensor.station.id, name: sensor.station.name } : null,
+    };
+  }
+
   private async clearListCache(): Promise<void> {
     for (const key of this.listCacheKeys) {
       await this.cacheManager.del(key);

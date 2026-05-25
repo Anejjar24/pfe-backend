@@ -6,6 +6,7 @@ import {
   Logger,
   Inject,
 } from '@nestjs/common';
+import { UpdateProfileDto } from './dto/update-profile.dto';
 import { createHash } from 'crypto';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
@@ -121,6 +122,19 @@ export class AuthService {
       if (error instanceof UnauthorizedException) throw error;
       throw new UnauthorizedException('Invalid refresh token');
     }
+  }
+
+  // ─── Profile update ────────────────────────────────────────────────────────
+
+  async updateProfile(user: User, dto: UpdateProfileDto) {
+    if (dto.firstname !== undefined) user.firstname = dto.firstname;
+    if (dto.lastname !== undefined) user.lastname = dto.lastname;
+    if (dto.password !== undefined) {
+      user.password = await this.passwordUtil.hashPassword(dto.password);
+    }
+    const saved = await this.userRepository.save(user);
+    this.logger.log(`Profile updated: ${user.email}`);
+    return this.getUserResponse(saved);
   }
 
   // ─── Helpers ───────────────────────────────────────────────────────────────

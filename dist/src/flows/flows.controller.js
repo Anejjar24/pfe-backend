@@ -40,8 +40,12 @@ let FlowsController = class FlowsController {
     remove(id) {
         return this.flowsService.remove(id);
     }
-    execute(dto) {
-        return this.executorService.execute(dto.graph, dto.input);
+    execute(dto, req) {
+        return this.executorService.execute(dto.graph, dto.input ?? {}, {
+            workflowId: dto.graph.id,
+            user: req.user,
+            triggerSource: 'manual',
+        });
     }
 };
 exports.FlowsController = FlowsController;
@@ -101,8 +105,9 @@ __decorate([
     (0, swagger_1.ApiOperation)({ summary: 'Execute a workflow graph directly (ad-hoc run)' }),
     (0, swagger_1.ApiResponse)({ status: 201, description: 'Execution result with per-node outputs' }),
     __param(0, (0, common_1.Body)()),
+    __param(1, (0, common_1.Request)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [execute_flow_dto_1.ExecuteFlowDto]),
+    __metadata("design:paramtypes", [execute_flow_dto_1.ExecuteFlowDto, Object]),
     __metadata("design:returntype", void 0)
 ], FlowsController.prototype, "execute", null);
 exports.FlowsController = FlowsController = __decorate([

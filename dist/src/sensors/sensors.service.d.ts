@@ -30,5 +30,17 @@ export declare class SensorsService {
         id: string;
     }>;
     findData(sensorId: string, limit?: number): Promise<SensorData[]>;
+    injectReading(sensorId: string, value: number): Promise<{
+        sensorId: string;
+        name: string;
+        value: number;
+        unit: string;
+        timestamp: Date;
+        status: import("../database/entities/Sensor.entity").SensorStatus;
+        station: {
+            id: string;
+            name: string;
+        } | null;
+    }>;
     private clearListCache;
 }

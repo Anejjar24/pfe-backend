@@ -2,7 +2,7 @@ import {
   Body, Controller, Delete, Get, HttpCode, HttpStatus,
   Param, Patch, Post, Query, UseGuards,
 } from '@nestjs/common';
-import { ApiBearerAuth, ApiOperation, ApiParam, ApiQuery, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiBody, ApiOperation, ApiParam, ApiQuery, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { Roles } from '../common/decorators/roles.decorator';
 import { JwtGuard } from '../common/guards/jwt.guard';
 import { RolesGuard } from '../common/guards/roles.guard';
@@ -69,5 +69,28 @@ export class SensorsController {
   @ApiResponse({ status: 204, description: 'Deleted' })
   async remove(@Param('id') id: string) {
     await this.sensorsService.remove(id);
+  }
+
+  @Post(':id/reading')
+  @Roles(UserRole.ADMIN, UserRole.OPERATOR)
+  @ApiOperation({
+    summary: 'Manually inject a sensor reading (admin/operator)',
+    description:
+      'Simulates an MQTT data point — updates lastReading/lastReadingAt on the sensor ' +
+      'and persists a SensorData record. Use this to test automation flows in the Builder ' +
+      'without a live MQTT device.',
+  })
+  @ApiParam({ name: 'id', description: 'Sensor UUID' })
+  @ApiBody({
+    schema: {
+      type: 'object',
+      required: ['value'],
+      properties: { value: { type: 'number', example: 25.5 } },
+    },
+  })
+  @ApiResponse({ status: 201, description: 'Reading injected — returns updated sensor snapshot' })
+  @ApiResponse({ status: 404, description: 'Sensor not found' })
+  injectReading(@Param('id') id: string, @Body('value') value: number) {
+    return this.sensorsService.injectReading(id, value);
   }
 }

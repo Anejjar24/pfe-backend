@@ -45,6 +45,9 @@ let SensorsController = class SensorsController {
     async remove(id) {
         await this.sensorsService.remove(id);
     }
+    injectReading(id, value) {
+        return this.sensorsService.injectReading(id, value);
+    }
 };
 exports.SensorsController = SensorsController;
 __decorate([
@@ -113,6 +116,31 @@ __decorate([
     __metadata("design:paramtypes", [String]),
     __metadata("design:returntype", Promise)
 ], SensorsController.prototype, "remove", null);
+__decorate([
+    (0, common_1.Post)(':id/reading'),
+    (0, roles_decorator_1.Roles)(User_entity_1.UserRole.ADMIN, User_entity_1.UserRole.OPERATOR),
+    (0, swagger_1.ApiOperation)({
+        summary: 'Manually inject a sensor reading (admin/operator)',
+        description: 'Simulates an MQTT data point — updates lastReading/lastReadingAt on the sensor ' +
+            'and persists a SensorData record. Use this to test automation flows in the Builder ' +
+            'without a live MQTT device.',
+    }),
+    (0, swagger_1.ApiParam)({ name: 'id', description: 'Sensor UUID' }),
+    (0, swagger_1.ApiBody)({
+        schema: {
+            type: 'object',
+            required: ['value'],
+            properties: { value: { type: 'number', example: 25.5 } },
+        },
+    }),
+    (0, swagger_1.ApiResponse)({ status: 201, description: 'Reading injected — returns updated sensor snapshot' }),
+    (0, swagger_1.ApiResponse)({ status: 404, description: 'Sensor not found' }),
+    __param(0, (0, common_1.Param)('id')),
+    __param(1, (0, common_1.Body)('value')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, Number]),
+    __metadata("design:returntype", void 0)
+], SensorsController.prototype, "injectReading", null);
 exports.SensorsController = SensorsController = __decorate([
     (0, swagger_1.ApiTags)('sensors'),
     (0, swagger_1.ApiBearerAuth)('access-token'),

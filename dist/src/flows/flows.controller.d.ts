@@ -19,5 +19,7 @@ export declare class FlowsController {
         deleted: boolean;
         id: string;
     }>;
-    execute(dto: ExecuteFlowDto): Promise<import("../common/types/workflow.types").ExecutionResult>;
+    execute(dto: ExecuteFlowDto, req: {
+        user: User;
+    }): Promise<import("../common/types/workflow.types").ExecutionResult>;
 }

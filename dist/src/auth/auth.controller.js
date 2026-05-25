@@ -20,6 +20,7 @@ const login_dto_1 = require("./dto/login.dto");
 const logout_dto_1 = require("./dto/logout.dto");
 const refresh_token_dto_1 = require("./dto/refresh-token.dto");
 const register_dto_1 = require("./dto/register.dto");
+const update_profile_dto_1 = require("./dto/update-profile.dto");
 const jwt_guard_1 = require("../common/guards/jwt.guard");
 let AuthController = class AuthController {
     constructor(authService) {
@@ -39,6 +40,9 @@ let AuthController = class AuthController {
     }
     async refresh(dto) {
         return this.authService.refreshToken(dto.refresh_token);
+    }
+    async updateProfile(req, dto) {
+        return this.authService.updateProfile(req.user, dto);
     }
 };
 exports.AuthController = AuthController;
@@ -100,6 +104,18 @@ __decorate([
     __metadata("design:paramtypes", [refresh_token_dto_1.RefreshTokenDto]),
     __metadata("design:returntype", Promise)
 ], AuthController.prototype, "refresh", null);
+__decorate([
+    (0, common_1.Patch)('profile'),
+    (0, common_1.UseGuards)(jwt_guard_1.JwtGuard),
+    (0, swagger_1.ApiBearerAuth)('access-token'),
+    (0, swagger_1.ApiOperation)({ summary: 'Update own profile — firstname, lastname, or password' }),
+    (0, swagger_1.ApiResponse)({ status: 200, description: 'Updated user (no password hash)' }),
+    __param(0, (0, common_1.Request)()),
+    __param(1, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object, update_profile_dto_1.UpdateProfileDto]),
+    __metadata("design:returntype", Promise)
+], AuthController.prototype, "updateProfile", null);
 exports.AuthController = AuthController = __decorate([
     (0, swagger_1.ApiTags)('auth'),
     (0, common_1.Controller)('auth'),
