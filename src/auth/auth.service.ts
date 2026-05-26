@@ -12,8 +12,7 @@ import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
-import { CACHE_MANAGER } from '@nestjs/cache-manager';
-import { Cache } from 'cache-manager';
+import { CACHE_MANAGER, Cache } from '@nestjs/cache-manager';
 import { User, UserRole } from '../database/entities/User.entity';
 import { PasswordUtil } from './utils/password.util';
 import { LoginDto } from './dto/login.dto';
@@ -155,7 +154,7 @@ export class AuthService {
     await this.cacheManager.set(
       this.denylistKey(token),
       '1',
-      { ttl: REFRESH_TOKEN_TTL_SECONDS },
+      REFRESH_TOKEN_TTL_SECONDS * 1000,
     );
   }
 

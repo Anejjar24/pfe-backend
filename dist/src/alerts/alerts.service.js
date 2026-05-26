@@ -111,6 +111,50 @@ let AlertsService = class AlertsService {
         alert.resolvedBy = user;
         return this.alertRepository.save(alert);
     }
+    async exportCsv(params) {
+        const where = {};
+        if (params.status)
+            where.status = params.status;
+        if (params.severity)
+            where.severity = params.severity;
+        if (params.type)
+            where.type = params.type;
+        if (params.stationId)
+            where.station = { id: params.stationId };
+        if (params.sensorId)
+            where.sensor = { id: params.sensorId };
+        if (params.from && params.to) {
+            where.createdAt = (0, typeorm_2.Between)(new Date(params.from), new Date(params.to));
+        }
+        else if (params.from) {
+            where.createdAt = (0, typeorm_2.MoreThanOrEqual)(new Date(params.from));
+        }
+        else if (params.to) {
+            where.createdAt = (0, typeorm_2.LessThanOrEqual)(new Date(params.to));
+        }
+        const alerts = await this.alertRepository.find({
+            where,
+            relations: ['station', 'sensor'],
+            order: { createdAt: 'DESC' },
+            take: 10_000,
+        });
+        const esc = (v) => `"${(v ?? '').replace(/"/g, '""')}"`;
+        const header = 'id,type,severity,status,message,station,sensor,createdAt,acknowledgedAt,resolvedAt,sourceSystem';
+        const rows = alerts.map((a) => [
+            a.id,
+            a.type,
+            a.severity,
+            a.status,
+            esc(a.message),
+            esc(a.station?.name ?? ''),
+            esc(a.sensor?.name ?? ''),
+            a.createdAt?.toISOString() ?? '',
+            a.acknowledgedAt?.toISOString() ?? '',
+            a.resolvedAt?.toISOString() ?? '',
+            esc(a.sourceSystem ?? ''),
+        ].join(','));
+        return [header, ...rows].join('\r\n');
+    }
 };
 exports.AlertsService = AlertsService;
 exports.AlertsService = AlertsService = __decorate([

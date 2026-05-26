@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { WorkflowSchedulerService } from './workflow-scheduler.service';
 import { AlertsModule } from '../alerts/alerts.module';
 import { Sensor } from '../database/entities/Sensor.entity';
 import { Workflow } from '../database/entities/Workflow.entity';
@@ -30,6 +31,8 @@ import { FlowsService } from './flows.service';
     FlowsService,
     NodeExecutor,
     WorkflowRunner,
+    WorkflowSchedulerService,
   ],
+  exports: [FlowExecutorService, FlowsService],
 })
 export class FlowsModule {}

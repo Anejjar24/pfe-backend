@@ -1,5 +1,5 @@
 import { Repository } from 'typeorm';
-import { Cache } from 'cache-manager';
+import { Cache } from '@nestjs/cache-manager';
 import { Sensor } from '../database/entities/Sensor.entity';
 import { SensorData } from '../database/entities/SensorData.entity';
 import { Station } from '../database/entities/Station.entity';
@@ -42,5 +42,6 @@ export declare class SensorsService {
             name: string;
         } | null;
     }>;
+    exportDataCsv(sensorId: string, limit: number, from?: string, to?: string): Promise<string>;
     private clearListCache;
 }

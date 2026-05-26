@@ -64,7 +64,7 @@ let SensorsService = class SensorsService {
             take: limit,
         });
         const result = { data, meta: { total, page, limit, pages: Math.ceil(total / limit) } };
-        await this.cacheManager.set(cacheKey, result, { ttl: SENSOR_LIST_TTL });
+        await this.cacheManager.set(cacheKey, result, SENSOR_LIST_TTL * 1000);
         this.listCacheKeys.add(cacheKey);
         return result;
     }
@@ -133,6 +133,34 @@ let SensorsService = class SensorsService {
             station: sensor.station ? { id: sensor.station.id, name: sensor.station.name } : null,
         };
     }
+    async exportDataCsv(sensorId, limit, from, to) {
+        const sensor = await this.findOne(sensorId);
+        const where = { sensor: { id: sensorId } };
+        if (from && to) {
+            where.timestamp = (0, typeorm_2.Between)(new Date(from), new Date(to));
+        }
+        else if (from) {
+            where.timestamp = (0, typeorm_2.MoreThanOrEqual)(new Date(from));
+        }
+        else if (to) {
+            where.timestamp = (0, typeorm_2.LessThanOrEqual)(new Date(to));
+        }
+        const data = await this.sensorDataRepository.find({
+            where,
+            order: { timestamp: 'DESC' },
+            take: limit,
+        });
+        const header = 'id,timestamp,value,unit,source,accuracy';
+        const rows = data.map((d) => [
+            d.id,
+            d.timestamp?.toISOString() ?? '',
+            d.value,
+            sensor.unit ?? '',
+            d.source ?? '',
+            d.accuracy ?? '',
+        ].join(','));
+        return [header, ...rows].join('\r\n');
+    }
     async clearListCache() {
         for (const key of this.listCacheKeys) {
             await this.cacheManager.del(key);
@@ -149,6 +177,7 @@ exports.SensorsService = SensorsService = __decorate([
     __param(3, (0, common_1.Inject)(cache_manager_1.CACHE_MANAGER)),
     __metadata("design:paramtypes", [typeorm_2.Repository,
         typeorm_2.Repository,
-        typeorm_2.Repository, Object])
+        typeorm_2.Repository,
+        cache_manager_1.Cache])
 ], SensorsService);
 //# sourceMappingURL=sensors.service.js.map

@@ -20,10 +20,12 @@ const create_flow_dto_1 = require("./dto/create-flow.dto");
 const execute_flow_dto_1 = require("./dto/execute-flow.dto");
 const flow_executor_service_1 = require("./flow-executor.service");
 const flows_service_1 = require("./flows.service");
+const workflow_scheduler_service_1 = require("./workflow-scheduler.service");
 let FlowsController = class FlowsController {
-    constructor(flowsService, executorService) {
+    constructor(flowsService, executorService, schedulerService) {
         this.flowsService = flowsService;
         this.executorService = executorService;
+        this.schedulerService = schedulerService;
     }
     create(dto, req) {
         return this.flowsService.create(dto, req.user);
@@ -39,6 +41,16 @@ let FlowsController = class FlowsController {
     }
     remove(id) {
         return this.flowsService.remove(id);
+    }
+    async activate(id) {
+        const workflow = await this.flowsService.activate(id);
+        await this.schedulerService.reloadWorkflow(id);
+        return workflow;
+    }
+    async deactivate(id) {
+        const workflow = await this.flowsService.deactivate(id);
+        await this.schedulerService.reloadWorkflow(id);
+        return workflow;
     }
     execute(dto, req) {
         return this.executorService.execute(dto.graph, dto.input ?? {}, {
@@ -101,6 +113,26 @@ __decorate([
     __metadata("design:returntype", void 0)
 ], FlowsController.prototype, "remove", null);
 __decorate([
+    (0, common_1.Patch)(':id/activate'),
+    (0, swagger_1.ApiOperation)({ summary: 'Activate a workflow — enables scheduled/MQTT triggers' }),
+    (0, swagger_1.ApiParam)({ name: 'id', description: 'Workflow UUID' }),
+    (0, swagger_1.ApiResponse)({ status: 200, description: 'Workflow activated' }),
+    __param(0, (0, common_1.Param)('id')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", Promise)
+], FlowsController.prototype, "activate", null);
+__decorate([
+    (0, common_1.Patch)(':id/deactivate'),
+    (0, swagger_1.ApiOperation)({ summary: 'Deactivate a workflow — disables all triggers' }),
+    (0, swagger_1.ApiParam)({ name: 'id', description: 'Workflow UUID' }),
+    (0, swagger_1.ApiResponse)({ status: 200, description: 'Workflow deactivated' }),
+    __param(0, (0, common_1.Param)('id')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", Promise)
+], FlowsController.prototype, "deactivate", null);
+__decorate([
     (0, common_1.Post)('execute'),
     (0, swagger_1.ApiOperation)({ summary: 'Execute a workflow graph directly (ad-hoc run)' }),
     (0, swagger_1.ApiResponse)({ status: 201, description: 'Execution result with per-node outputs' }),
@@ -116,6 +148,7 @@ exports.FlowsController = FlowsController = __decorate([
     (0, common_1.UseGuards)(jwt_guard_1.JwtGuard),
     (0, common_1.Controller)('flows'),
     __metadata("design:paramtypes", [flows_service_1.FlowsService,
-        flow_executor_service_1.FlowExecutorService])
+        flow_executor_service_1.FlowExecutorService,
+        workflow_scheduler_service_1.WorkflowSchedulerService])
 ], FlowsController);
 //# sourceMappingURL=flows.controller.js.map

@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Patch, Post, Query, Request, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Header, Param, Patch, Post, Query, Request, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiParam, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { Roles } from '../common/decorators/roles.decorator';
 import { JwtGuard } from '../common/guards/jwt.guard';
@@ -14,6 +14,23 @@ import { AlertsService } from './alerts.service';
 @UseGuards(JwtGuard, RolesGuard)
 export class AlertsController {
   constructor(private readonly alertsService: AlertsService) {}
+
+  @Get('export/csv')
+  @Header('Content-Type', 'text/csv; charset=utf-8')
+  @Header('Content-Disposition', 'attachment; filename="alerts.csv"')
+  @ApiOperation({ summary: 'Export filtered alerts as a CSV file (max 10 000 rows)' })
+  @ApiResponse({ status: 200, description: 'CSV file download' })
+  exportCsv(
+    @Query('status') status?: string,
+    @Query('severity') severity?: string,
+    @Query('type') type?: string,
+    @Query('stationId') stationId?: string,
+    @Query('sensorId') sensorId?: string,
+    @Query('from') from?: string,
+    @Query('to') to?: string,
+  ): Promise<string> {
+    return this.alertsService.exportCsv({ status, severity, type, stationId, sensorId, from, to });
+  }
 
   @Get()
   @ApiOperation({ summary: 'List alerts (paginated, filterable by status/severity/type/station/sensor)' })

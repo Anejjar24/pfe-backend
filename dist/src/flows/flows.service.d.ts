@@ -11,6 +11,8 @@ export declare class FlowsService {
     findAll(): Promise<Workflow[]>;
     findOne(id: string): Promise<Workflow>;
     update(id: string, dto: CreateFlowDto, user?: User): Promise<Workflow>;
+    activate(id: string): Promise<Workflow>;
+    deactivate(id: string): Promise<Workflow>;
     remove(id: string): Promise<{
         deleted: boolean;
         id: string;

@@ -3,10 +3,12 @@ import { CreateFlowDto } from './dto/create-flow.dto';
 import { ExecuteFlowDto } from './dto/execute-flow.dto';
 import { FlowExecutorService } from './flow-executor.service';
 import { FlowsService } from './flows.service';
+import { WorkflowSchedulerService } from './workflow-scheduler.service';
 export declare class FlowsController {
     private readonly flowsService;
     private readonly executorService;
-    constructor(flowsService: FlowsService, executorService: FlowExecutorService);
+    private readonly schedulerService;
+    constructor(flowsService: FlowsService, executorService: FlowExecutorService, schedulerService: WorkflowSchedulerService);
     create(dto: CreateFlowDto, req: {
         user: User;
     }): Promise<import("../database/entities/Workflow.entity").Workflow>;
@@ -19,6 +21,8 @@ export declare class FlowsController {
         deleted: boolean;
         id: string;
     }>;
+    activate(id: string): Promise<import("../database/entities/Workflow.entity").Workflow>;
+    deactivate(id: string): Promise<import("../database/entities/Workflow.entity").Workflow>;
     execute(dto: ExecuteFlowDto, req: {
         user: User;
     }): Promise<import("../common/types/workflow.types").ExecutionResult>;

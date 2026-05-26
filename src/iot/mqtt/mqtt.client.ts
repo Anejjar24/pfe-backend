@@ -9,6 +9,8 @@ export class MqttClient implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger(MqttClient.name);
   private client?: MqttClientType;
   private isConnected = false;
+  /** External handlers registered by other services (e.g. WorkflowSchedulerService) */
+  private readonly externalHandlers: Array<(topic: string, payload: Buffer) => void> = [];
 
   constructor(
     private readonly configService: ConfigService,
@@ -97,6 +99,14 @@ export class MqttClient implements OnModuleInit, OnModuleDestroy {
     });
   }
 
+  /**
+   * Register an external message handler.
+   * Called once per subscribing service — the handler receives every incoming message.
+   */
+  registerHandler(handler: (topic: string, payload: Buffer) => void): void {
+    this.externalHandlers.push(handler);
+  }
+
   private handleMessage(topic: string, payload: Buffer): void {
     try {
       const message = JSON.parse(payload.toString());
@@ -126,6 +136,16 @@ export class MqttClient implements OnModuleInit, OnModuleDestroy {
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
       this.logger.error(`Failed to parse MQTT message: ${message}`);
+    }
+
+    // Forward to all registered external handlers
+    for (const handler of this.externalHandlers) {
+      try {
+        handler(topic, payload);
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : String(err);
+        this.logger.error(`External MQTT handler error: ${msg}`);
+      }
     }
   }
 

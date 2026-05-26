@@ -9,6 +9,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.FlowsModule = void 0;
 const common_1 = require("@nestjs/common");
 const typeorm_1 = require("@nestjs/typeorm");
+const workflow_scheduler_service_1 = require("./workflow-scheduler.service");
 const alerts_module_1 = require("../alerts/alerts.module");
 const Sensor_entity_1 = require("../database/entities/Sensor.entity");
 const Workflow_entity_1 = require("../database/entities/Workflow.entity");
@@ -42,7 +43,9 @@ exports.FlowsModule = FlowsModule = __decorate([
             flows_service_1.FlowsService,
             node_executor_1.NodeExecutor,
             workflow_runner_1.WorkflowRunner,
+            workflow_scheduler_service_1.WorkflowSchedulerService,
         ],
+        exports: [flow_executor_service_1.FlowExecutorService, flows_service_1.FlowsService],
     })
 ], FlowsModule);
 //# sourceMappingURL=flows.module.js.map

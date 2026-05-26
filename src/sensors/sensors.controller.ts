@@ -1,5 +1,5 @@
 import {
-  Body, Controller, Delete, Get, HttpCode, HttpStatus,
+  Body, Controller, Delete, Get, Header, HttpCode, HttpStatus,
   Param, Patch, Post, Query, UseGuards,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiBody, ApiOperation, ApiParam, ApiQuery, ApiResponse, ApiTags } from '@nestjs/swagger';
@@ -33,6 +33,24 @@ export class SensorsController {
   @ApiResponse({ status: 404, description: 'Sensor not found' })
   findOne(@Param('id') id: string) {
     return this.sensorsService.findOne(id);
+  }
+
+  @Get(':id/data/export')
+  @Header('Content-Type', 'text/csv; charset=utf-8')
+  @Header('Content-Disposition', 'attachment; filename="sensor-data.csv"')
+  @ApiOperation({ summary: 'Export sensor readings as a CSV file (max 5 000 rows)' })
+  @ApiParam({ name: 'id', description: 'Sensor UUID' })
+  @ApiQuery({ name: 'limit', required: false, description: 'Max rows to export (default 5000)' })
+  @ApiQuery({ name: 'from', required: false, description: 'ISO date lower bound' })
+  @ApiQuery({ name: 'to', required: false, description: 'ISO date upper bound' })
+  @ApiResponse({ status: 200, description: 'CSV file download' })
+  exportDataCsv(
+    @Param('id') id: string,
+    @Query('limit') limit?: number,
+    @Query('from') from?: string,
+    @Query('to') to?: string,
+  ): Promise<string> {
+    return this.sensorsService.exportDataCsv(id, Number(limit) || 5_000, from, to);
   }
 
   @Get(':id/data')

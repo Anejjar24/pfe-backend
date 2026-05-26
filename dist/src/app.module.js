@@ -10,7 +10,8 @@ exports.AppModule = void 0;
 const common_1 = require("@nestjs/common");
 const config_1 = require("@nestjs/config");
 const cache_manager_1 = require("@nestjs/cache-manager");
-const redisStore = require("cache-manager-redis-store");
+const schedule_1 = require("@nestjs/schedule");
+const cache_manager_redis_yet_1 = require("cache-manager-redis-yet");
 const app_controller_1 = require("./app.controller");
 const users_module_1 = require("./users/users.module");
 const flows_module_1 = require("./flows/flows.module");
@@ -37,21 +38,25 @@ exports.AppModule = AppModule = __decorate([
             }),
             cache_manager_1.CacheModule.registerAsync({
                 isGlobal: true,
-                useFactory: (configService) => {
+                useFactory: async (configService) => {
                     const redisHost = configService.get('REDIS_HOST');
                     if (redisHost) {
                         return {
-                            store: redisStore,
-                            host: redisHost,
-                            port: configService.get('REDIS_PORT') ?? 6379,
-                            password: configService.get('REDIS_PASSWORD') || undefined,
-                            ttl: 300,
+                            store: await (0, cache_manager_redis_yet_1.redisStore)({
+                                socket: {
+                                    host: redisHost,
+                                    port: configService.get('REDIS_PORT') ?? 6379,
+                                },
+                                password: configService.get('REDIS_PASSWORD') || undefined,
+                            }),
+                            ttl: 300_000,
                         };
                     }
-                    return { ttl: 300, max: 1000 };
+                    return { ttl: 300_000, max: 1000 };
                 },
                 inject: [config_1.ConfigService],
             }),
+            schedule_1.ScheduleModule.forRoot(),
             database_module_1.DatabaseModule,
             auth_module_1.AuthModule,
             realtime_module_1.RealtimeModule,

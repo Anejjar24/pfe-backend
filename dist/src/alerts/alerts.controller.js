@@ -26,6 +26,9 @@ let AlertsController = class AlertsController {
     constructor(alertsService) {
         this.alertsService = alertsService;
     }
+    exportCsv(status, severity, type, stationId, sensorId, from, to) {
+        return this.alertsService.exportCsv({ status, severity, type, stationId, sensorId, from, to });
+    }
     findAll(query) {
         return this.alertsService.findAll(query);
     }
@@ -43,6 +46,23 @@ let AlertsController = class AlertsController {
     }
 };
 exports.AlertsController = AlertsController;
+__decorate([
+    (0, common_1.Get)('export/csv'),
+    (0, common_1.Header)('Content-Type', 'text/csv; charset=utf-8'),
+    (0, common_1.Header)('Content-Disposition', 'attachment; filename="alerts.csv"'),
+    (0, swagger_1.ApiOperation)({ summary: 'Export filtered alerts as a CSV file (max 10 000 rows)' }),
+    (0, swagger_1.ApiResponse)({ status: 200, description: 'CSV file download' }),
+    __param(0, (0, common_1.Query)('status')),
+    __param(1, (0, common_1.Query)('severity')),
+    __param(2, (0, common_1.Query)('type')),
+    __param(3, (0, common_1.Query)('stationId')),
+    __param(4, (0, common_1.Query)('sensorId')),
+    __param(5, (0, common_1.Query)('from')),
+    __param(6, (0, common_1.Query)('to')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, String, String, String, String, String, String]),
+    __metadata("design:returntype", Promise)
+], AlertsController.prototype, "exportCsv", null);
 __decorate([
     (0, common_1.Get)(),
     (0, swagger_1.ApiOperation)({ summary: 'List alerts (paginated, filterable by status/severity/type/station/sensor)' }),

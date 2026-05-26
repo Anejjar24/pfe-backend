@@ -27,4 +27,13 @@ export declare class AlertsService {
     findOne(id: string): Promise<Alert>;
     acknowledge(id: string, user: User): Promise<Alert>;
     resolve(id: string, user: User): Promise<Alert>;
+    exportCsv(params: {
+        status?: string;
+        severity?: string;
+        type?: string;
+        stationId?: string;
+        sensorId?: string;
+        from?: string;
+        to?: string;
+    }): Promise<string>;
 }

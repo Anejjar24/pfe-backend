@@ -5,6 +5,7 @@ import { AlertsService } from './alerts.service';
 export declare class AlertsController {
     private readonly alertsService;
     constructor(alertsService: AlertsService);
+    exportCsv(status?: string, severity?: string, type?: string, stationId?: string, sensorId?: string, from?: string, to?: string): Promise<string>;
     findAll(query: AlertQueryDto): Promise<{
         data: import("../database/entities/Alert.entity").Alert[];
         meta: {

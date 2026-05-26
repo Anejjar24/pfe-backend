@@ -33,6 +33,9 @@ let SensorsController = class SensorsController {
     findOne(id) {
         return this.sensorsService.findOne(id);
     }
+    exportDataCsv(id, limit, from, to) {
+        return this.sensorsService.exportDataCsv(id, Number(limit) || 5_000, from, to);
+    }
     findData(id, limit) {
         return this.sensorsService.findData(id, Number(limit) || 100);
     }
@@ -70,6 +73,24 @@ __decorate([
     __metadata("design:paramtypes", [String]),
     __metadata("design:returntype", void 0)
 ], SensorsController.prototype, "findOne", null);
+__decorate([
+    (0, common_1.Get)(':id/data/export'),
+    (0, common_1.Header)('Content-Type', 'text/csv; charset=utf-8'),
+    (0, common_1.Header)('Content-Disposition', 'attachment; filename="sensor-data.csv"'),
+    (0, swagger_1.ApiOperation)({ summary: 'Export sensor readings as a CSV file (max 5 000 rows)' }),
+    (0, swagger_1.ApiParam)({ name: 'id', description: 'Sensor UUID' }),
+    (0, swagger_1.ApiQuery)({ name: 'limit', required: false, description: 'Max rows to export (default 5000)' }),
+    (0, swagger_1.ApiQuery)({ name: 'from', required: false, description: 'ISO date lower bound' }),
+    (0, swagger_1.ApiQuery)({ name: 'to', required: false, description: 'ISO date upper bound' }),
+    (0, swagger_1.ApiResponse)({ status: 200, description: 'CSV file download' }),
+    __param(0, (0, common_1.Param)('id')),
+    __param(1, (0, common_1.Query)('limit')),
+    __param(2, (0, common_1.Query)('from')),
+    __param(3, (0, common_1.Query)('to')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, Number, String, String]),
+    __metadata("design:returntype", Promise)
+], SensorsController.prototype, "exportDataCsv", null);
 __decorate([
     (0, common_1.Get)(':id/data'),
     (0, swagger_1.ApiOperation)({ summary: 'Get historical sensor readings' }),

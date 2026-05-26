@@ -129,7 +129,7 @@ let AuthService = AuthService_1 = class AuthService {
         return { access_token, refresh_token };
     }
     async denylistToken(token) {
-        await this.cacheManager.set(this.denylistKey(token), '1', { ttl: REFRESH_TOKEN_TTL_SECONDS });
+        await this.cacheManager.set(this.denylistKey(token), '1', REFRESH_TOKEN_TTL_SECONDS * 1000);
     }
     denylistKey(token) {
         const hash = (0, crypto_1.createHash)('sha256').update(token).digest('hex');
@@ -153,6 +153,7 @@ exports.AuthService = AuthService = AuthService_1 = __decorate([
     __metadata("design:paramtypes", [typeorm_1.Repository,
         jwt_1.JwtService,
         password_util_1.PasswordUtil,
-        config_1.ConfigService, Object])
+        config_1.ConfigService,
+        cache_manager_1.Cache])
 ], AuthService);
 //# sourceMappingURL=auth.service.js.map

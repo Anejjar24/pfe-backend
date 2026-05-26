@@ -1,7 +1,8 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { CacheModule } from '@nestjs/cache-manager';
-import * as redisStore from 'cache-manager-redis-store';
+import { ScheduleModule } from '@nestjs/schedule';
+import { redisStore } from 'cache-manager-redis-yet';
 import { AppController } from './app.controller';
 import { UsersModule } from './users/users.module';
 import { FlowsModule } from './flows/flows.module';
@@ -26,23 +27,26 @@ import { NotificationsModule } from './notifications/notifications.module';
     CacheModule.registerAsync({
       isGlobal: true,
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      useFactory: (configService: ConfigService): any => {
+      useFactory: async (configService: ConfigService): Promise<any> => {
         const redisHost = configService.get<string>('REDIS_HOST');
         if (redisHost) {
           return {
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            store: redisStore as any,
-            host: redisHost,
-            port: configService.get<number>('REDIS_PORT') ?? 6379,
-            password: configService.get<string>('REDIS_PASSWORD') || undefined,
-            ttl: 300,
+            store: await redisStore({
+              socket: {
+                host: redisHost,
+                port: configService.get<number>('REDIS_PORT') ?? 6379,
+              },
+              password: configService.get<string>('REDIS_PASSWORD') || undefined,
+            }),
+            ttl: 300_000, // 5 minutes in milliseconds (cache-manager v5 uses ms)
           };
         }
         // In-memory fallback when Redis is not configured
-        return { ttl: 300, max: 1000 };
+        return { ttl: 300_000, max: 1000 };
       },
       inject: [ConfigService],
     }),
+    ScheduleModule.forRoot(),
     DatabaseModule,
     AuthModule,
     RealtimeModule,

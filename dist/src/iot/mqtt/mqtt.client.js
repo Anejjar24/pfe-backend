@@ -21,6 +21,7 @@ let MqttClient = MqttClient_1 = class MqttClient {
         this.iotService = iotService;
         this.logger = new common_1.Logger(MqttClient_1.name);
         this.isConnected = false;
+        this.externalHandlers = [];
     }
     async onModuleInit() {
         await this.connect();
@@ -92,6 +93,9 @@ let MqttClient = MqttClient_1 = class MqttClient {
             });
         });
     }
+    registerHandler(handler) {
+        this.externalHandlers.push(handler);
+    }
     handleMessage(topic, payload) {
         try {
             const message = JSON.parse(payload.toString());
@@ -113,6 +117,15 @@ let MqttClient = MqttClient_1 = class MqttClient {
         catch (error) {
             const message = error instanceof Error ? error.message : String(error);
             this.logger.error(`Failed to parse MQTT message: ${message}`);
+        }
+        for (const handler of this.externalHandlers) {
+            try {
+                handler(topic, payload);
+            }
+            catch (err) {
+                const msg = err instanceof Error ? err.message : String(err);
+                this.logger.error(`External MQTT handler error: ${msg}`);
+            }
         }
     }
     publish(topic, message) {

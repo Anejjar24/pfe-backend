@@ -11,6 +11,7 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.CreateFlowDto = void 0;
 const class_validator_1 = require("class-validator");
+const Workflow_entity_1 = require("../../database/entities/Workflow.entity");
 class CreateFlowDto {
 }
 exports.CreateFlowDto = CreateFlowDto;
@@ -23,4 +24,19 @@ __decorate([
     (0, class_validator_1.IsObject)(),
     __metadata("design:type", Object)
 ], CreateFlowDto.prototype, "graph", void 0);
+__decorate([
+    (0, class_validator_1.IsEnum)(Workflow_entity_1.WorkflowTriggerType),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", String)
+], CreateFlowDto.prototype, "triggerType", void 0);
+__decorate([
+    (0, class_validator_1.IsObject)(),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", Object)
+], CreateFlowDto.prototype, "triggerConfig", void 0);
+__decorate([
+    (0, class_validator_1.IsBoolean)(),
+    (0, class_validator_1.IsOptional)(),
+    __metadata("design:type", Boolean)
+], CreateFlowDto.prototype, "isActive", void 0);
 //# sourceMappingURL=create-flow.dto.js.map

@@ -2,7 +2,7 @@ import { UpdateProfileDto } from './dto/update-profile.dto';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { Repository } from 'typeorm';
-import { Cache } from 'cache-manager';
+import { Cache } from '@nestjs/cache-manager';
 import { User, UserRole } from '../database/entities/User.entity';
 import { PasswordUtil } from './utils/password.util';
 import { LoginDto } from './dto/login.dto';

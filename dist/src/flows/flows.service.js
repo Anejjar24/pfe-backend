@@ -32,6 +32,9 @@ let FlowsService = class FlowsService {
             name: dto.name || dto.graph.name || 'Untitled workflow',
             graph: { ...dto.graph, id },
             createdBy: user,
+            triggerType: dto.triggerType ?? Workflow_entity_1.WorkflowTriggerType.MANUAL,
+            triggerConfig: dto.triggerConfig ?? {},
+            isActive: dto.isActive ?? false,
         });
         return this.workflowRepository.save(workflow);
     }
@@ -55,8 +58,24 @@ let FlowsService = class FlowsService {
         this.validator.validate(dto.graph);
         workflow.name = dto.name || workflow.name;
         workflow.graph = { ...dto.graph, id };
+        if (dto.triggerType !== undefined)
+            workflow.triggerType = dto.triggerType;
+        if (dto.triggerConfig !== undefined)
+            workflow.triggerConfig = dto.triggerConfig;
+        if (dto.isActive !== undefined)
+            workflow.isActive = dto.isActive;
         if (user)
             workflow.updatedBy = user;
+        return this.workflowRepository.save(workflow);
+    }
+    async activate(id) {
+        const workflow = await this.findOne(id);
+        workflow.isActive = true;
+        return this.workflowRepository.save(workflow);
+    }
+    async deactivate(id) {
+        const workflow = await this.findOne(id);
+        workflow.isActive = false;
         return this.workflowRepository.save(workflow);
     }
     async remove(id) {

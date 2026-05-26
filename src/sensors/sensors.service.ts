@@ -1,8 +1,7 @@
 import { Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { ILike, Repository } from 'typeorm';
-import { CACHE_MANAGER } from '@nestjs/cache-manager';
-import { Cache } from 'cache-manager';
+import { Between, ILike, LessThanOrEqual, MoreThanOrEqual, Repository } from 'typeorm';
+import { CACHE_MANAGER, Cache } from '@nestjs/cache-manager';
 import { Sensor } from '../database/entities/Sensor.entity';
 import { SensorData } from '../database/entities/SensorData.entity';
 import { Station } from '../database/entities/Station.entity';
@@ -64,7 +63,7 @@ export class SensorsService {
 
     const result = { data, meta: { total, page, limit, pages: Math.ceil(total / limit) } };
 
-    await this.cacheManager.set(cacheKey, result, { ttl: SENSOR_LIST_TTL });
+    await this.cacheManager.set(cacheKey, result, SENSOR_LIST_TTL * 1000);
     this.listCacheKeys.add(cacheKey);
 
     return result;
@@ -151,6 +150,44 @@ export class SensorsService {
       status: sensor.status,
       station: sensor.station ? { id: sensor.station.id, name: sensor.station.name } : null,
     };
+  }
+
+  async exportDataCsv(
+    sensorId: string,
+    limit: number,
+    from?: string,
+    to?: string,
+  ): Promise<string> {
+    const sensor = await this.findOne(sensorId); // validates existence, loads unit
+
+    const where: Record<string, any> = { sensor: { id: sensorId } };
+    if (from && to) {
+      where.timestamp = Between(new Date(from), new Date(to));
+    } else if (from) {
+      where.timestamp = MoreThanOrEqual(new Date(from));
+    } else if (to) {
+      where.timestamp = LessThanOrEqual(new Date(to));
+    }
+
+    const data = await this.sensorDataRepository.find({
+      where,
+      order: { timestamp: 'DESC' },
+      take: limit,
+    });
+
+    const header = 'id,timestamp,value,unit,source,accuracy';
+    const rows = data.map((d) =>
+      [
+        d.id,
+        d.timestamp?.toISOString() ?? '',
+        d.value,
+        sensor.unit ?? '',
+        d.source ?? '',
+        d.accuracy ?? '',
+      ].join(',')
+    );
+
+    return [header, ...rows].join('\r\n');
   }
 
   private async clearListCache(): Promise<void> {

@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, Param, Post, Put, Request, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Patch, Post, Put, Request, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiParam, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { User } from '../database/entities/User.entity';
 import { JwtGuard } from '../common/guards/jwt.guard';
@@ -6,6 +6,7 @@ import { CreateFlowDto } from './dto/create-flow.dto';
 import { ExecuteFlowDto } from './dto/execute-flow.dto';
 import { FlowExecutorService } from './flow-executor.service';
 import { FlowsService } from './flows.service';
+import { WorkflowSchedulerService } from './workflow-scheduler.service';
 
 @ApiTags('flows')
 @ApiBearerAuth('access-token')
@@ -15,6 +16,7 @@ export class FlowsController {
   constructor(
     private readonly flowsService: FlowsService,
     private readonly executorService: FlowExecutorService,
+    private readonly schedulerService: WorkflowSchedulerService,
   ) {}
 
   @Post()
@@ -54,6 +56,26 @@ export class FlowsController {
   @ApiResponse({ status: 200, description: 'Deleted' })
   remove(@Param('id') id: string) {
     return this.flowsService.remove(id);
+  }
+
+  @Patch(':id/activate')
+  @ApiOperation({ summary: 'Activate a workflow — enables scheduled/MQTT triggers' })
+  @ApiParam({ name: 'id', description: 'Workflow UUID' })
+  @ApiResponse({ status: 200, description: 'Workflow activated' })
+  async activate(@Param('id') id: string) {
+    const workflow = await this.flowsService.activate(id);
+    await this.schedulerService.reloadWorkflow(id);
+    return workflow;
+  }
+
+  @Patch(':id/deactivate')
+  @ApiOperation({ summary: 'Deactivate a workflow — disables all triggers' })
+  @ApiParam({ name: 'id', description: 'Workflow UUID' })
+  @ApiResponse({ status: 200, description: 'Workflow deactivated' })
+  async deactivate(@Param('id') id: string) {
+    const workflow = await this.flowsService.deactivate(id);
+    await this.schedulerService.reloadWorkflow(id);
+    return workflow;
   }
 
   @Post('execute')
