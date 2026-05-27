@@ -28,7 +28,6 @@ USER aquaflow
 EXPOSE 3001
 
 HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
-  CMD wget -qO- http://localhost:3001/api/health 2>/dev/null || \
-      wget -qO- http://localhost:3001/api/auth/me 2>/dev/null | grep -q . && exit 0 || exit 1
+  CMD wget -qO- http://localhost:3001/api/health 2>/dev/null | grep -q '"status":"ok"' || exit 1
 
 CMD ["node", "dist/main"]
