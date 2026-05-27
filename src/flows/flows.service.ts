@@ -3,6 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { randomUUID } from 'crypto';
 import { Repository } from 'typeorm';
 import { Workflow, WorkflowTriggerType } from '../database/entities/Workflow.entity';
+import { WorkflowExecution } from '../database/entities/WorkflowExecution.entity';
 import { User } from '../database/entities/User.entity';
 import { CreateFlowDto } from './dto/create-flow.dto';
 import { FlowValidatorService } from './flow-validator.service';
@@ -12,6 +13,8 @@ export class FlowsService {
   constructor(
     @InjectRepository(Workflow)
     private readonly workflowRepository: Repository<Workflow>,
+    @InjectRepository(WorkflowExecution)
+    private readonly executionRepository: Repository<WorkflowExecution>,
     private readonly validator: FlowValidatorService,
   ) {}
 
@@ -74,5 +77,15 @@ export class FlowsService {
     const workflow = await this.findOne(id);
     await this.workflowRepository.remove(workflow);
     return { deleted: true, id };
+  }
+
+  async getExecutions(workflowId: string) {
+    await this.findOne(workflowId); // throws 404 if workflow doesn't exist
+    return this.executionRepository.find({
+      where: { workflow: { id: workflowId } },
+      relations: ['triggeredBy'],
+      order: { startedAt: 'DESC' },
+      take: 50,
+    });
   }
 }

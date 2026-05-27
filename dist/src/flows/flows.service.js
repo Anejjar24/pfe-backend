@@ -18,10 +18,12 @@ const typeorm_1 = require("@nestjs/typeorm");
 const crypto_1 = require("crypto");
 const typeorm_2 = require("typeorm");
 const Workflow_entity_1 = require("../database/entities/Workflow.entity");
+const WorkflowExecution_entity_1 = require("../database/entities/WorkflowExecution.entity");
 const flow_validator_service_1 = require("./flow-validator.service");
 let FlowsService = class FlowsService {
-    constructor(workflowRepository, validator) {
+    constructor(workflowRepository, executionRepository, validator) {
         this.workflowRepository = workflowRepository;
+        this.executionRepository = executionRepository;
         this.validator = validator;
     }
     async create(dto, user) {
@@ -83,12 +85,23 @@ let FlowsService = class FlowsService {
         await this.workflowRepository.remove(workflow);
         return { deleted: true, id };
     }
+    async getExecutions(workflowId) {
+        await this.findOne(workflowId);
+        return this.executionRepository.find({
+            where: { workflow: { id: workflowId } },
+            relations: ['triggeredBy'],
+            order: { startedAt: 'DESC' },
+            take: 50,
+        });
+    }
 };
 exports.FlowsService = FlowsService;
 exports.FlowsService = FlowsService = __decorate([
     (0, common_1.Injectable)(),
     __param(0, (0, typeorm_1.InjectRepository)(Workflow_entity_1.Workflow)),
+    __param(1, (0, typeorm_1.InjectRepository)(WorkflowExecution_entity_1.WorkflowExecution)),
     __metadata("design:paramtypes", [typeorm_2.Repository,
+        typeorm_2.Repository,
         flow_validator_service_1.FlowValidatorService])
 ], FlowsService);
 //# sourceMappingURL=flows.service.js.map

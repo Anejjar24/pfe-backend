@@ -33,6 +33,15 @@ export class FlowsController {
     return this.flowsService.findAll();
   }
 
+  @Get(':id/executions')
+  @ApiOperation({ summary: 'List execution history for a workflow (last 50 runs)' })
+  @ApiParam({ name: 'id', description: 'Workflow UUID' })
+  @ApiResponse({ status: 200, description: 'Array of WorkflowExecution records, newest first' })
+  @ApiResponse({ status: 404, description: 'Workflow not found' })
+  getExecutions(@Param('id') id: string) {
+    return this.flowsService.getExecutions(id);
+  }
+
   @Get(':id')
   @ApiOperation({ summary: 'Get a single workflow' })
   @ApiParam({ name: 'id', description: 'Workflow UUID' })

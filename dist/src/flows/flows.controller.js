@@ -33,6 +33,9 @@ let FlowsController = class FlowsController {
     findAll() {
         return this.flowsService.findAll();
     }
+    getExecutions(id) {
+        return this.flowsService.getExecutions(id);
+    }
     findOne(id) {
         return this.flowsService.findOne(id);
     }
@@ -79,6 +82,17 @@ __decorate([
     __metadata("design:paramtypes", []),
     __metadata("design:returntype", void 0)
 ], FlowsController.prototype, "findAll", null);
+__decorate([
+    (0, common_1.Get)(':id/executions'),
+    (0, swagger_1.ApiOperation)({ summary: 'List execution history for a workflow (last 50 runs)' }),
+    (0, swagger_1.ApiParam)({ name: 'id', description: 'Workflow UUID' }),
+    (0, swagger_1.ApiResponse)({ status: 200, description: 'Array of WorkflowExecution records, newest first' }),
+    (0, swagger_1.ApiResponse)({ status: 404, description: 'Workflow not found' }),
+    __param(0, (0, common_1.Param)('id')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String]),
+    __metadata("design:returntype", void 0)
+], FlowsController.prototype, "getExecutions", null);
 __decorate([
     (0, common_1.Get)(':id'),
     (0, swagger_1.ApiOperation)({ summary: 'Get a single workflow' }),

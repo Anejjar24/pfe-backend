@@ -13,6 +13,7 @@ export declare class FlowsController {
         user: User;
     }): Promise<import("../database/entities/Workflow.entity").Workflow>;
     findAll(): Promise<import("../database/entities/Workflow.entity").Workflow[]>;
+    getExecutions(id: string): Promise<import("../database/entities/WorkflowExecution.entity").WorkflowExecution[]>;
     findOne(id: string): Promise<import("../database/entities/Workflow.entity").Workflow>;
     update(id: string, dto: CreateFlowDto, req: {
         user: User;
