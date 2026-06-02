@@ -6,12 +6,14 @@ export declare class HttpRequestHandler {
         status?: undefined;
         statusText?: undefined;
         data?: undefined;
+        value?: undefined;
         branch?: undefined;
     } | {
         ok: boolean;
         status: number;
         statusText: string;
         data: unknown;
+        value: unknown;
         branch: string;
         error?: undefined;
     } | {
@@ -21,5 +23,6 @@ export declare class HttpRequestHandler {
         status?: undefined;
         statusText?: undefined;
         data?: undefined;
+        value?: undefined;
     }>;
 }

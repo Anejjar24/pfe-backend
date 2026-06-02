@@ -12,7 +12,7 @@ class NotificationHandler {
         const subject = String(node.data?.subject || 'Workflow Notification');
         const contentTemplate = String(node.data?.message || node.data?.content || '');
         const content = contentTemplate || JSON.stringify(input);
-        if (channel === 'in_app') {
+        if (channel === 'in_app' || channel === 'email' || channel === 'sms' || channel === 'slack') {
             return this.sendInApp(subject, content);
         }
         if (channel === 'webhook') {

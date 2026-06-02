@@ -6,6 +6,8 @@ export type WorkflowNodeType =
   | 'delay'
   | 'api'
   | 'notification'
+  // Data blocks
+  | 'data-transform'
   // Industrial blocks
   | 'sensor-read'
   | 'threshold-check'

@@ -51,6 +51,11 @@ export class HttpRequestHandler {
         status: response.status,
         statusText: response.statusText,
         data,
+        // `value` is the field unwrapBranchValue extracts so downstream nodes
+        // (data-transform, action, output…) receive the response body directly
+        // rather than the full envelope.  The full envelope (ok, status, data…)
+        // is still available in the execution step log.
+        value: data,
         branch: response.ok ? 'response' : 'error',
       };
     } catch (err) {

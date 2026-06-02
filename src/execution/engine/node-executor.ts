@@ -10,6 +10,7 @@ import { RealtimeService } from '../../realtime/realtime.service';
 import { StationsService } from '../../stations/stations.service';
 import { AlertTriggerHandler } from '../handlers/alert-trigger.handler';
 import { ActionHandler } from '../handlers/action.handler';
+import { DataTransformHandler } from '../handlers/data-transform.handler';
 import { DecisionHandler } from '../handlers/decision.handler';
 import { HttpRequestHandler } from '../handlers/http-request.handler';
 import { InputHandler } from '../handlers/input.handler';
@@ -27,6 +28,7 @@ export class NodeExecutor {
   // Generic handlers (no external deps)
   private readonly inputHandler = new InputHandler();
   private readonly actionHandler = new ActionHandler();
+  private readonly dataTransformHandler = new DataTransformHandler();
   private readonly decisionHandler = new DecisionHandler();
   private readonly outputHandler = new OutputHandler();
   private readonly thresholdCheckHandler = new ThresholdCheckHandler();
@@ -60,10 +62,13 @@ export class NodeExecutor {
     switch (node.type) {
       // Generic blocks
       case 'input':       return this.inputHandler.execute(node, context);
-      case 'action':      return this.actionHandler.execute(node, input);
-      case 'decision':    return this.decisionHandler.execute(node, input);
+      case 'action':         return this.actionHandler.execute(node, input);
+      case 'data-transform': return this.dataTransformHandler.execute(node, input);
+      case 'decision':       return this.decisionHandler.execute(node, input);
       case 'output':      return this.outputHandler.execute(node, input);
       case 'delay':       return this.handleDelay(node, input);
+      // 'api' is a legacy alias for 'http-request' — kept so that workflows
+      // saved in the DB before TASK 5 can still be executed without a migration.
       case 'api':         return this.httpRequestHandler.execute(node, input);
       case 'notification': return this.notificationHandler.execute(node, input);
 

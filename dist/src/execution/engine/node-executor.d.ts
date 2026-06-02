@@ -10,6 +10,7 @@ import { ExecutionContext } from './execution-context';
 export declare class NodeExecutor {
     private readonly inputHandler;
     private readonly actionHandler;
+    private readonly dataTransformHandler;
     private readonly decisionHandler;
     private readonly outputHandler;
     private readonly thresholdCheckHandler;
@@ -21,6 +22,6 @@ export declare class NodeExecutor {
     private readonly pumpControlHandler;
     private readonly stationControlHandler;
     constructor(sensorRepository: Repository<Sensor>, notificationRepository: Repository<Notification>, alertsService: AlertsService, mqttClient: MqttClient, realtimeService: RealtimeService, stationsService: StationsService);
-    execute(node: WorkflowNode, input: unknown, context: ExecutionContext): Promise<unknown>;
+    execute(node: WorkflowNode, input: unknown, context: ExecutionContext): Promise<any>;
     private handleDelay;
 }

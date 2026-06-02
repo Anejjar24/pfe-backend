@@ -20,7 +20,11 @@ export class NotificationHandler {
     const contentTemplate = String(node.data?.message || node.data?.content || '');
     const content = contentTemplate || JSON.stringify(input);
 
-    if (channel === 'in_app') {
+    // 'in_app' is the default and the only channel that works without
+    // external configuration.  'email', 'sms', 'slack' are legacy UI values
+    // that fall back to in_app so old saved workflows still produce a
+    // notification rather than silently returning notified:false.
+    if (channel === 'in_app' || channel === 'email' || channel === 'sms' || channel === 'slack') {
       return this.sendInApp(subject, content);
     }
 

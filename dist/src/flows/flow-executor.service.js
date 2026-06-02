@@ -47,7 +47,7 @@ let FlowExecutorService = FlowExecutorService_1 = class FlowExecutorService {
         const startedAt = Date.now();
         let result;
         try {
-            result = await this.runner.run(graph, input);
+            result = await this.runner.run(graph, input, options.user?.id);
             const duration = Date.now() - startedAt;
             await this.executionRepo.save({
                 ...execution,
@@ -60,10 +60,13 @@ let FlowExecutorService = FlowExecutorService_1 = class FlowExecutorService {
                 duration,
             });
             if (workflow) {
-                await this.workflowRepo.update(workflow.id, {
-                    executionCount: () => 'execution_count + 1',
-                    lastExecutedAt: new Date(),
-                });
+                try {
+                    await this.workflowRepo.increment({ id: workflow.id }, 'executionCount', 1);
+                    await this.workflowRepo.update(workflow.id, { lastExecutedAt: new Date() });
+                }
+                catch (statErr) {
+                    this.logger.warn(`Could not update workflow stats for ${workflow.id}: ${statErr.message}`);
+                }
             }
         }
         catch (err) {

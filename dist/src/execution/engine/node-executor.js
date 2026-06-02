@@ -24,6 +24,7 @@ const realtime_service_1 = require("../../realtime/realtime.service");
 const stations_service_1 = require("../../stations/stations.service");
 const alert_trigger_handler_1 = require("../handlers/alert-trigger.handler");
 const action_handler_1 = require("../handlers/action.handler");
+const data_transform_handler_1 = require("../handlers/data-transform.handler");
 const decision_handler_1 = require("../handlers/decision.handler");
 const http_request_handler_1 = require("../handlers/http-request.handler");
 const input_handler_1 = require("../handlers/input.handler");
@@ -38,6 +39,7 @@ let NodeExecutor = class NodeExecutor {
     constructor(sensorRepository, notificationRepository, alertsService, mqttClient, realtimeService, stationsService) {
         this.inputHandler = new input_handler_1.InputHandler();
         this.actionHandler = new action_handler_1.ActionHandler();
+        this.dataTransformHandler = new data_transform_handler_1.DataTransformHandler();
         this.decisionHandler = new decision_handler_1.DecisionHandler();
         this.outputHandler = new output_handler_1.OutputHandler();
         this.thresholdCheckHandler = new threshold_check_handler_1.ThresholdCheckHandler();
@@ -53,6 +55,7 @@ let NodeExecutor = class NodeExecutor {
         switch (node.type) {
             case 'input': return this.inputHandler.execute(node, context);
             case 'action': return this.actionHandler.execute(node, input);
+            case 'data-transform': return this.dataTransformHandler.execute(node, input);
             case 'decision': return this.decisionHandler.execute(node, input);
             case 'output': return this.outputHandler.execute(node, input);
             case 'delay': return this.handleDelay(node, input);

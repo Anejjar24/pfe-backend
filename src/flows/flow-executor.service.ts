@@ -58,7 +58,7 @@ export class FlowExecutorService {
     let result: ExecutionResult;
 
     try {
-      result = await this.runner.run(graph, input);
+      result = await this.runner.run(graph, input, options.user?.id);
 
       const duration = Date.now() - startedAt;
       await this.executionRepo.save({
@@ -73,10 +73,18 @@ export class FlowExecutorService {
       });
 
       if (workflow) {
-        await this.workflowRepo.update(workflow.id, {
-          executionCount: () => 'execution_count + 1',
-          lastExecutedAt: new Date(),
-        });
+        // Use increment() instead of a raw-SQL arrow function so TypeORM
+        // resolves the column name through its own naming strategy (camelCase
+        // by default) rather than relying on a hard-coded snake_case string.
+        // Wrapped in try/catch so a stale schema never fails a successful run.
+        try {
+          await this.workflowRepo.increment({ id: workflow.id }, 'executionCount', 1);
+          await this.workflowRepo.update(workflow.id, { lastExecutedAt: new Date() });
+        } catch (statErr) {
+          this.logger.warn(
+            `Could not update workflow stats for ${workflow.id}: ${(statErr as Error).message}`,
+          );
+        }
       }
     } catch (err) {
       const duration = Date.now() - startedAt;
