@@ -6,13 +6,15 @@ import { Station } from '../database/entities/Station.entity';
 import { CreateSensorDto } from './dto/create-sensor.dto';
 import { SensorQueryDto } from './dto/sensor-query.dto';
 import { UpdateSensorDto } from './dto/update-sensor.dto';
+import { RealtimeService } from '../realtime/realtime.service';
 export declare class SensorsService {
     private readonly sensorRepository;
     private readonly sensorDataRepository;
     private readonly stationRepository;
     private readonly cacheManager;
+    private readonly realtimeService?;
     private readonly listCacheKeys;
-    constructor(sensorRepository: Repository<Sensor>, sensorDataRepository: Repository<SensorData>, stationRepository: Repository<Station>, cacheManager: Cache);
+    constructor(sensorRepository: Repository<Sensor>, sensorDataRepository: Repository<SensorData>, stationRepository: Repository<Station>, cacheManager: Cache, realtimeService?: RealtimeService | undefined);
     create(dto: CreateSensorDto): Promise<Sensor>;
     findAll(query: SensorQueryDto): Promise<{
         data: Sensor[];

@@ -14,12 +14,13 @@ const SensorData_entity_1 = require("../database/entities/SensorData.entity");
 const Station_entity_1 = require("../database/entities/Station.entity");
 const sensors_controller_1 = require("./sensors.controller");
 const sensors_service_1 = require("./sensors.service");
+const realtime_module_1 = require("../realtime/realtime.module");
 let SensorsModule = class SensorsModule {
 };
 exports.SensorsModule = SensorsModule;
 exports.SensorsModule = SensorsModule = __decorate([
     (0, common_1.Module)({
-        imports: [typeorm_1.TypeOrmModule.forFeature([Sensor_entity_1.Sensor, SensorData_entity_1.SensorData, Station_entity_1.Station])],
+        imports: [typeorm_1.TypeOrmModule.forFeature([Sensor_entity_1.Sensor, SensorData_entity_1.SensorData, Station_entity_1.Station]), realtime_module_1.RealtimeModule],
         controllers: [sensors_controller_1.SensorsController],
         providers: [sensors_service_1.SensorsService],
         exports: [sensors_service_1.SensorsService],

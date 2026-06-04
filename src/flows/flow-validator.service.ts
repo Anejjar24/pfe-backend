@@ -9,9 +9,12 @@ const validTypes = new Set([
   'api',
   // Data blocks
   'data-transform',
-  // Industrial blocks
+  // Industrial blocks — core
   'sensor-read', 'threshold-check', 'alert-trigger',
   'mqtt-publish', 'pump-control', 'station-control',
+  // Industrial blocks — extended
+  'value-transform', 'sensor-check', 'data-aggregate',
+  'stream-filter', 'data-output',
   // Integration blocks
   'http-request',
 ]);

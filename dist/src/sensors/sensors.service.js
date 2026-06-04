@@ -20,14 +20,16 @@ const cache_manager_1 = require("@nestjs/cache-manager");
 const Sensor_entity_1 = require("../database/entities/Sensor.entity");
 const SensorData_entity_1 = require("../database/entities/SensorData.entity");
 const Station_entity_1 = require("../database/entities/Station.entity");
+const realtime_service_1 = require("../realtime/realtime.service");
 const SENSOR_LIST_TTL = 60;
 const SENSOR_LIST_PREFIX = 'sensors:list:';
 let SensorsService = class SensorsService {
-    constructor(sensorRepository, sensorDataRepository, stationRepository, cacheManager) {
+    constructor(sensorRepository, sensorDataRepository, stationRepository, cacheManager, realtimeService) {
         this.sensorRepository = sensorRepository;
         this.sensorDataRepository = sensorDataRepository;
         this.stationRepository = stationRepository;
         this.cacheManager = cacheManager;
+        this.realtimeService = realtimeService;
         this.listCacheKeys = new Set();
     }
     async create(dto) {
@@ -123,7 +125,7 @@ let SensorsService = class SensorsService {
             qualityFlags: {},
         }));
         await this.clearListCache();
-        return {
+        const result = {
             sensorId: sensor.id,
             name: sensor.name,
             value: sensor.lastReading,
@@ -132,6 +134,20 @@ let SensorsService = class SensorsService {
             status: sensor.status,
             station: sensor.station ? { id: sensor.station.id, name: sensor.station.name } : null,
         };
+        if (this.realtimeService) {
+            const thresholdViolated = (sensor.minThreshold !== null && sensor.minThreshold !== undefined && value < Number(sensor.minThreshold)) ||
+                (sensor.maxThreshold !== null && sensor.maxThreshold !== undefined && value > Number(sensor.maxThreshold));
+            this.realtimeService.broadcastToAll('sensor-update', {
+                sensorId: sensor.id,
+                stationId: sensor.station?.id ?? null,
+                value,
+                timestamp: sensor.lastReadingAt,
+                thresholdViolated,
+                status: sensor.status,
+                source: 'simulator',
+            });
+        }
+        return result;
     }
     async exportDataCsv(sensorId, limit, from, to) {
         const sensor = await this.findOne(sensorId);
@@ -175,9 +191,11 @@ exports.SensorsService = SensorsService = __decorate([
     __param(1, (0, typeorm_1.InjectRepository)(SensorData_entity_1.SensorData)),
     __param(2, (0, typeorm_1.InjectRepository)(Station_entity_1.Station)),
     __param(3, (0, common_1.Inject)(cache_manager_1.CACHE_MANAGER)),
+    __param(4, (0, common_1.Optional)()),
     __metadata("design:paramtypes", [typeorm_2.Repository,
         typeorm_2.Repository,
         typeorm_2.Repository,
-        cache_manager_1.Cache])
+        cache_manager_1.Cache,
+        realtime_service_1.RealtimeService])
 ], SensorsService);
 //# sourceMappingURL=sensors.service.js.map

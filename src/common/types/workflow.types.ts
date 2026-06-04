@@ -8,13 +8,19 @@ export type WorkflowNodeType =
   | 'notification'
   // Data blocks
   | 'data-transform'
-  // Industrial blocks
+  // Industrial blocks — core
   | 'sensor-read'
   | 'threshold-check'
   | 'pump-control'
   | 'alert-trigger'
   | 'mqtt-publish'
   | 'station-control'
+  // Industrial blocks — extended
+  | 'value-transform'
+  | 'sensor-check'
+  | 'data-aggregate'
+  | 'stream-filter'
+  | 'data-output'
   // Integration blocks
   | 'http-request';
 

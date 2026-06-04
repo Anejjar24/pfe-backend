@@ -1,4 +1,4 @@
-import { Inject, Injectable, NotFoundException } from '@nestjs/common';
+import { Inject, Injectable, NotFoundException, Optional } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Between, ILike, LessThanOrEqual, MoreThanOrEqual, Repository } from 'typeorm';
 import { CACHE_MANAGER, Cache } from '@nestjs/cache-manager';
@@ -8,6 +8,7 @@ import { Station } from '../database/entities/Station.entity';
 import { CreateSensorDto } from './dto/create-sensor.dto';
 import { SensorQueryDto } from './dto/sensor-query.dto';
 import { UpdateSensorDto } from './dto/update-sensor.dto';
+import { RealtimeService } from '../realtime/realtime.service';
 
 const SENSOR_LIST_TTL = 60; // seconds
 const SENSOR_LIST_PREFIX = 'sensors:list:';
@@ -26,6 +27,7 @@ export class SensorsService {
     private readonly stationRepository: Repository<Station>,
     @Inject(CACHE_MANAGER)
     private readonly cacheManager: Cache,
+    @Optional() private readonly realtimeService?: RealtimeService,
   ) {}
 
   async create(dto: CreateSensorDto) {
@@ -141,7 +143,7 @@ export class SensorsService {
 
     await this.clearListCache();
 
-    return {
+    const result = {
       sensorId: sensor.id,
       name: sensor.name,
       value: sensor.lastReading,
@@ -150,6 +152,26 @@ export class SensorsService {
       status: sensor.status,
       station: sensor.station ? { id: sensor.station.id, name: sensor.station.name } : null,
     };
+
+    // Emit real-time socket event so the Simulator Lab and monitoring dashboards
+    // receive live updates exactly as they would from an MQTT-sourced reading.
+    if (this.realtimeService) {
+      const thresholdViolated =
+        (sensor.minThreshold !== null && sensor.minThreshold !== undefined && value < Number(sensor.minThreshold)) ||
+        (sensor.maxThreshold !== null && sensor.maxThreshold !== undefined && value > Number(sensor.maxThreshold));
+
+      this.realtimeService.broadcastToAll('sensor-update', {
+        sensorId: sensor.id,
+        stationId: sensor.station?.id ?? null,
+        value,
+        timestamp: sensor.lastReadingAt,
+        thresholdViolated,
+        status: sensor.status,
+        source: 'simulator',
+      });
+    }
+
+    return result;
   }
 
   async exportDataCsv(
