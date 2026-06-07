@@ -43,6 +43,7 @@ class HttpRequestHandler {
                 status: response.status,
                 statusText: response.statusText,
                 data,
+                value: data,
                 branch: response.ok ? 'response' : 'error',
             };
         }

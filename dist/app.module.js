@@ -9,6 +9,11 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.AppModule = void 0;
 const common_1 = require("@nestjs/common");
 const config_1 = require("@nestjs/config");
+const cache_manager_1 = require("@nestjs/cache-manager");
+const schedule_1 = require("@nestjs/schedule");
+const cache_manager_redis_yet_1 = require("cache-manager-redis-yet");
+const app_controller_1 = require("./app.controller");
+const users_module_1 = require("./users/users.module");
 const flows_module_1 = require("./flows/flows.module");
 const database_module_1 = require("./database/database.module");
 const auth_module_1 = require("./auth/auth.module");
@@ -19,16 +24,39 @@ const sensors_module_1 = require("./sensors/sensors.module");
 const alerts_module_1 = require("./alerts/alerts.module");
 const maintenance_module_1 = require("./maintenance/maintenance.module");
 const analytics_module_1 = require("./analytics/analytics.module");
+const notifications_module_1 = require("./notifications/notifications.module");
 let AppModule = class AppModule {
 };
 exports.AppModule = AppModule;
 exports.AppModule = AppModule = __decorate([
     (0, common_1.Module)({
+        controllers: [app_controller_1.AppController],
         imports: [
             config_1.ConfigModule.forRoot({
                 isGlobal: true,
                 envFilePath: ['.env.local', '.env'],
             }),
+            cache_manager_1.CacheModule.registerAsync({
+                isGlobal: true,
+                useFactory: async (configService) => {
+                    const redisHost = configService.get('REDIS_HOST');
+                    if (redisHost) {
+                        return {
+                            store: await (0, cache_manager_redis_yet_1.redisStore)({
+                                socket: {
+                                    host: redisHost,
+                                    port: configService.get('REDIS_PORT') ?? 6379,
+                                },
+                                password: configService.get('REDIS_PASSWORD') || undefined,
+                            }),
+                            ttl: 300_000,
+                        };
+                    }
+                    return { ttl: 300_000, max: 1000 };
+                },
+                inject: [config_1.ConfigService],
+            }),
+            schedule_1.ScheduleModule.forRoot(),
             database_module_1.DatabaseModule,
             auth_module_1.AuthModule,
             realtime_module_1.RealtimeModule,
@@ -39,6 +67,8 @@ exports.AppModule = AppModule = __decorate([
             maintenance_module_1.MaintenanceModule,
             flows_module_1.FlowsModule,
             analytics_module_1.AnalyticsModule,
+            notifications_module_1.NotificationsModule,
+            users_module_1.UsersModule,
         ],
     })
 ], AppModule);

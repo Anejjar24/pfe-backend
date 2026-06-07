@@ -15,8 +15,21 @@ export declare class SensorsController {
         };
     }>;
     findOne(id: string): Promise<import("../database/entities/Sensor.entity").Sensor>;
+    exportDataCsv(id: string, limit?: number, from?: string, to?: string): Promise<string>;
     findData(id: string, limit?: number): Promise<import("../database/entities/SensorData.entity").SensorData[]>;
     create(dto: CreateSensorDto): Promise<import("../database/entities/Sensor.entity").Sensor>;
     update(id: string, dto: UpdateSensorDto): Promise<import("../database/entities/Sensor.entity").Sensor>;
     remove(id: string): Promise<void>;
+    injectReading(id: string, value: number): Promise<{
+        sensorId: string;
+        name: string;
+        value: number;
+        unit: string;
+        timestamp: Date;
+        status: import("../database/entities/Sensor.entity").SensorStatus;
+        station: {
+            id: string;
+            name: string;
+        } | null;
+    }>;
 }

@@ -10,61 +10,73 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.CreateStationDto = void 0;
+const swagger_1 = require("@nestjs/swagger");
 const class_validator_1 = require("class-validator");
 const Station_entity_1 = require("../../database/entities/Station.entity");
 class CreateStationDto {
 }
 exports.CreateStationDto = CreateStationDto;
 __decorate([
+    (0, swagger_1.ApiProperty)({ example: 'Station Nord', description: 'Station name', maxLength: 255 }),
     (0, class_validator_1.IsString)(),
     (0, class_validator_1.MaxLength)(255),
     __metadata("design:type", String)
 ], CreateStationDto.prototype, "name", void 0);
 __decorate([
+    (0, swagger_1.ApiProperty)({ example: 'Zone industrielle, Alger', description: 'Physical location', maxLength: 255 }),
     (0, class_validator_1.IsString)(),
     (0, class_validator_1.MaxLength)(255),
     __metadata("design:type", String)
 ], CreateStationDto.prototype, "location", void 0);
 __decorate([
+    (0, swagger_1.ApiProperty)({ example: 36.7372, description: 'Latitude (decimal degrees)' }),
     (0, class_validator_1.IsNumber)(),
     __metadata("design:type", Number)
 ], CreateStationDto.prototype, "latitude", void 0);
 __decorate([
+    (0, swagger_1.ApiProperty)({ example: 3.0869, description: 'Longitude (decimal degrees)' }),
     (0, class_validator_1.IsNumber)(),
     __metadata("design:type", Number)
 ], CreateStationDto.prototype, "longitude", void 0);
 __decorate([
+    (0, swagger_1.ApiProperty)({ example: 5000, description: 'Storage/treatment capacity (numeric value)' }),
     (0, class_validator_1.IsNumber)(),
     __metadata("design:type", Number)
 ], CreateStationDto.prototype, "capacity", void 0);
 __decorate([
+    (0, swagger_1.ApiPropertyOptional)({ example: 'm3', description: 'Unit for capacity', maxLength: 50 }),
     (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.IsString)(),
     (0, class_validator_1.MaxLength)(50),
     __metadata("design:type", String)
 ], CreateStationDto.prototype, "capacityUnit", void 0);
 __decorate([
+    (0, swagger_1.ApiPropertyOptional)({ enum: Station_entity_1.StationType, description: 'Station type' }),
     (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.IsEnum)(Station_entity_1.StationType),
     __metadata("design:type", String)
 ], CreateStationDto.prototype, "type", void 0);
 __decorate([
+    (0, swagger_1.ApiPropertyOptional)({ enum: Station_entity_1.StationStatus, description: 'Operational status' }),
     (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.IsEnum)(Station_entity_1.StationStatus),
     __metadata("design:type", String)
 ], CreateStationDto.prototype, "status", void 0);
 __decorate([
+    (0, swagger_1.ApiPropertyOptional)({ example: 'Main treatment facility for the northern district' }),
     (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.IsString)(),
     __metadata("design:type", String)
 ], CreateStationDto.prototype, "description", void 0);
 __decorate([
+    (0, swagger_1.ApiPropertyOptional)({ type: [String], example: ['pump-01', 'filter-02'], description: 'Equipment IDs' }),
     (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.IsArray)(),
     (0, class_validator_1.IsString)({ each: true }),
     __metadata("design:type", Array)
 ], CreateStationDto.prototype, "equipments", void 0);
 __decorate([
+    (0, swagger_1.ApiPropertyOptional)({ type: Object, description: 'Arbitrary metadata JSON' }),
     (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.IsObject)(),
     __metadata("design:type", Object)

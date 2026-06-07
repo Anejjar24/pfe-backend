@@ -10,6 +10,7 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.AlertQueryDto = void 0;
+const swagger_1 = require("@nestjs/swagger");
 const class_transformer_1 = require("class-transformer");
 const class_validator_1 = require("class-validator");
 const Alert_entity_1 = require("../../database/entities/Alert.entity");
@@ -21,6 +22,7 @@ class AlertQueryDto {
 }
 exports.AlertQueryDto = AlertQueryDto;
 __decorate([
+    (0, swagger_1.ApiPropertyOptional)({ minimum: 1, default: 1 }),
     (0, class_validator_1.IsOptional)(),
     (0, class_transformer_1.Type)(() => Number),
     (0, class_validator_1.IsInt)(),
@@ -28,6 +30,7 @@ __decorate([
     __metadata("design:type", Number)
 ], AlertQueryDto.prototype, "page", void 0);
 __decorate([
+    (0, swagger_1.ApiPropertyOptional)({ minimum: 1, maximum: 100, default: 20 }),
     (0, class_validator_1.IsOptional)(),
     (0, class_transformer_1.Type)(() => Number),
     (0, class_validator_1.IsInt)(),
@@ -36,26 +39,31 @@ __decorate([
     __metadata("design:type", Number)
 ], AlertQueryDto.prototype, "limit", void 0);
 __decorate([
+    (0, swagger_1.ApiPropertyOptional)({ enum: Alert_entity_1.AlertStatus, description: 'Filter by alert status' }),
     (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.IsEnum)(Alert_entity_1.AlertStatus),
     __metadata("design:type", String)
 ], AlertQueryDto.prototype, "status", void 0);
 __decorate([
+    (0, swagger_1.ApiPropertyOptional)({ enum: Alert_entity_1.AlertSeverity, description: 'Filter by severity' }),
     (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.IsEnum)(Alert_entity_1.AlertSeverity),
     __metadata("design:type", String)
 ], AlertQueryDto.prototype, "severity", void 0);
 __decorate([
+    (0, swagger_1.ApiPropertyOptional)({ enum: Alert_entity_1.AlertType, description: 'Filter by alert type' }),
     (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.IsEnum)(Alert_entity_1.AlertType),
     __metadata("design:type", String)
 ], AlertQueryDto.prototype, "type", void 0);
 __decorate([
+    (0, swagger_1.ApiPropertyOptional)({ description: 'Filter by station UUID' }),
     (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.IsUUID)(),
     __metadata("design:type", String)
 ], AlertQueryDto.prototype, "stationId", void 0);
 __decorate([
+    (0, swagger_1.ApiPropertyOptional)({ description: 'Filter by sensor UUID' }),
     (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.IsUUID)(),
     __metadata("design:type", String)

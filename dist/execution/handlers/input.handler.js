@@ -3,7 +3,15 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.InputHandler = void 0;
 class InputHandler {
     execute(node, context) {
-        return node.data?.value ?? context.input;
+        const raw = node.data?.value ?? context.input;
+        if (typeof raw === 'string') {
+            try {
+                return JSON.parse(raw);
+            }
+            catch {
+            }
+        }
+        return raw;
     }
 }
 exports.InputHandler = InputHandler;

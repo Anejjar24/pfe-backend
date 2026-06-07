@@ -9,10 +9,15 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.FlowsModule = void 0;
 const common_1 = require("@nestjs/common");
 const typeorm_1 = require("@nestjs/typeorm");
+const workflow_scheduler_service_1 = require("./workflow-scheduler.service");
 const alerts_module_1 = require("../alerts/alerts.module");
 const Sensor_entity_1 = require("../database/entities/Sensor.entity");
+const SensorData_entity_1 = require("../database/entities/SensorData.entity");
 const Workflow_entity_1 = require("../database/entities/Workflow.entity");
+const Notification_entity_1 = require("../database/entities/Notification.entity");
+const WorkflowExecution_entity_1 = require("../database/entities/WorkflowExecution.entity");
 const iot_module_1 = require("../iot/iot.module");
+const realtime_module_1 = require("../realtime/realtime.module");
 const stations_module_1 = require("../stations/stations.module");
 const node_executor_1 = require("../execution/engine/node-executor");
 const workflow_runner_1 = require("../execution/engine/workflow-runner");
@@ -26,9 +31,10 @@ exports.FlowsModule = FlowsModule;
 exports.FlowsModule = FlowsModule = __decorate([
     (0, common_1.Module)({
         imports: [
-            typeorm_1.TypeOrmModule.forFeature([Workflow_entity_1.Workflow, Sensor_entity_1.Sensor]),
+            typeorm_1.TypeOrmModule.forFeature([Workflow_entity_1.Workflow, Sensor_entity_1.Sensor, SensorData_entity_1.SensorData, Notification_entity_1.Notification, WorkflowExecution_entity_1.WorkflowExecution]),
             alerts_module_1.AlertsModule,
             iot_module_1.IotModule,
+            realtime_module_1.RealtimeModule,
             stations_module_1.StationsModule,
         ],
         controllers: [flows_controller_1.FlowsController],
@@ -38,7 +44,9 @@ exports.FlowsModule = FlowsModule = __decorate([
             flows_service_1.FlowsService,
             node_executor_1.NodeExecutor,
             workflow_runner_1.WorkflowRunner,
+            workflow_scheduler_service_1.WorkflowSchedulerService,
         ],
+        exports: [flow_executor_service_1.FlowExecutorService, flows_service_1.FlowsService],
     })
 ], FlowsModule);
 //# sourceMappingURL=flows.module.js.map

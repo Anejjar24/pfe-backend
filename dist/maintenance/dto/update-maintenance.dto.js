@@ -10,38 +10,44 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.UpdateMaintenanceDto = void 0;
-const mapped_types_1 = require("@nestjs/mapped-types");
+const swagger_1 = require("@nestjs/swagger");
 const class_validator_1 = require("class-validator");
 const create_maintenance_dto_1 = require("./create-maintenance.dto");
-class UpdateMaintenanceDto extends (0, mapped_types_1.PartialType)(create_maintenance_dto_1.CreateMaintenanceDto) {
+class UpdateMaintenanceDto extends (0, swagger_1.PartialType)(create_maintenance_dto_1.CreateMaintenanceDto) {
 }
 exports.UpdateMaintenanceDto = UpdateMaintenanceDto;
 __decorate([
+    (0, swagger_1.ApiPropertyOptional)({ example: 'Replaced seal and tested pump at 6 bar', description: 'Summary of work done' }),
     (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.IsString)(),
     __metadata("design:type", String)
 ], UpdateMaintenanceDto.prototype, "workDone", void 0);
 __decorate([
+    (0, swagger_1.ApiPropertyOptional)({ example: 280.0, description: 'Actual cost incurred' }),
     (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.IsNumber)(),
     __metadata("design:type", Number)
 ], UpdateMaintenanceDto.prototype, "actualCost", void 0);
 __decorate([
+    (0, swagger_1.ApiPropertyOptional)({ example: 5.5, description: 'Actual duration in hours' }),
     (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.IsNumber)(),
     __metadata("design:type", Number)
 ], UpdateMaintenanceDto.prototype, "actualDuration", void 0);
 __decorate([
+    (0, swagger_1.ApiPropertyOptional)({ example: '2026-05-20T09:00:00Z', description: 'When work started (ISO 8601)' }),
     (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.IsDateString)(),
     __metadata("design:type", String)
 ], UpdateMaintenanceDto.prototype, "startedAt", void 0);
 __decorate([
+    (0, swagger_1.ApiPropertyOptional)({ example: '2026-05-20T14:30:00Z', description: 'When work completed (ISO 8601)' }),
     (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.IsDateString)(),
     __metadata("design:type", String)
 ], UpdateMaintenanceDto.prototype, "completedAt", void 0);
 __decorate([
+    (0, swagger_1.ApiPropertyOptional)({ description: 'UUID of the technician to reassign' }),
     (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.IsUUID)(),
     __metadata("design:type", String)

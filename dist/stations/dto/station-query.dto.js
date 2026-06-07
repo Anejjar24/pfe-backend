@@ -10,6 +10,7 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.StationQueryDto = void 0;
+const swagger_1 = require("@nestjs/swagger");
 const class_transformer_1 = require("class-transformer");
 const class_validator_1 = require("class-validator");
 const Station_entity_1 = require("../../database/entities/Station.entity");
@@ -21,6 +22,7 @@ class StationQueryDto {
 }
 exports.StationQueryDto = StationQueryDto;
 __decorate([
+    (0, swagger_1.ApiPropertyOptional)({ minimum: 1, default: 1, description: 'Page number' }),
     (0, class_validator_1.IsOptional)(),
     (0, class_transformer_1.Type)(() => Number),
     (0, class_validator_1.IsInt)(),
@@ -28,6 +30,7 @@ __decorate([
     __metadata("design:type", Number)
 ], StationQueryDto.prototype, "page", void 0);
 __decorate([
+    (0, swagger_1.ApiPropertyOptional)({ minimum: 1, maximum: 100, default: 20, description: 'Results per page' }),
     (0, class_validator_1.IsOptional)(),
     (0, class_transformer_1.Type)(() => Number),
     (0, class_validator_1.IsInt)(),
@@ -36,16 +39,19 @@ __decorate([
     __metadata("design:type", Number)
 ], StationQueryDto.prototype, "limit", void 0);
 __decorate([
+    (0, swagger_1.ApiPropertyOptional)({ enum: Station_entity_1.StationStatus, description: 'Filter by status' }),
     (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.IsEnum)(Station_entity_1.StationStatus),
     __metadata("design:type", String)
 ], StationQueryDto.prototype, "status", void 0);
 __decorate([
+    (0, swagger_1.ApiPropertyOptional)({ enum: Station_entity_1.StationType, description: 'Filter by type' }),
     (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.IsEnum)(Station_entity_1.StationType),
     __metadata("design:type", String)
 ], StationQueryDto.prototype, "type", void 0);
 __decorate([
+    (0, swagger_1.ApiPropertyOptional)({ example: 'nord', description: 'Search by name (case-insensitive)' }),
     (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.IsString)(),
     __metadata("design:type", String)

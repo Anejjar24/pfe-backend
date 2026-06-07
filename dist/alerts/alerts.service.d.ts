@@ -4,6 +4,7 @@ import { Sensor } from '../database/entities/Sensor.entity';
 import { Station } from '../database/entities/Station.entity';
 import { User } from '../database/entities/User.entity';
 import { RealtimeService } from '../realtime/realtime.service';
+import { NotificationsService } from '../notifications/notifications.service';
 import { AlertQueryDto } from './dto/alert-query.dto';
 import { CreateAlertDto } from './dto/create-alert.dto';
 export declare class AlertsService {
@@ -11,7 +12,8 @@ export declare class AlertsService {
     private readonly stationRepository;
     private readonly sensorRepository;
     private readonly realtimeService;
-    constructor(alertRepository: Repository<Alert>, stationRepository: Repository<Station>, sensorRepository: Repository<Sensor>, realtimeService: RealtimeService);
+    private readonly notificationsService;
+    constructor(alertRepository: Repository<Alert>, stationRepository: Repository<Station>, sensorRepository: Repository<Sensor>, realtimeService: RealtimeService, notificationsService: NotificationsService);
     create(dto: CreateAlertDto): Promise<Alert>;
     findAll(query: AlertQueryDto): Promise<{
         data: Alert[];
@@ -25,4 +27,13 @@ export declare class AlertsService {
     findOne(id: string): Promise<Alert>;
     acknowledge(id: string, user: User): Promise<Alert>;
     resolve(id: string, user: User): Promise<Alert>;
+    exportCsv(params: {
+        status?: string;
+        severity?: string;
+        type?: string;
+        stationId?: string;
+        sensorId?: string;
+        from?: string;
+        to?: string;
+    }): Promise<string>;
 }

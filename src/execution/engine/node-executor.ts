@@ -33,6 +33,7 @@ import { DataOutputHandler }    from '../handlers/data-output.handler';
 import { SensorCheckHandler }   from '../handlers/sensor-check.handler';
 import { StreamFilterHandler }  from '../handlers/stream-filter.handler';
 import { ValueTransformHandler } from '../handlers/value-transform.handler';
+import { CustomCalcHandler }    from '../handlers/custom-calc.handler';
 
 import { ExecutionContext } from './execution-context';
 
@@ -51,6 +52,9 @@ export class NodeExecutor {
   private readonly valueTransformHandler = new ValueTransformHandler();
   private readonly sensorCheckHandler    = new SensorCheckHandler();
   private readonly streamFilterHandler   = new StreamFilterHandler();
+
+  // ── Custom calculation handler ───────────────────────────────────────────────
+  private readonly customCalcHandler: CustomCalcHandler;
 
   // ── Handlers with DB / service dependencies ──────────────────────────────────
   private readonly sensorReadHandler:     SensorReadHandler;
@@ -82,6 +86,9 @@ export class NodeExecutor {
     // Extended industrial
     this.dataAggregateHandler  = new DataAggregateHandler(sensorRepository);
     this.dataOutputHandler     = new DataOutputHandler(sensorDataRepository, sensorRepository);
+
+    // Custom calc
+    this.customCalcHandler     = new CustomCalcHandler(sensorRepository, sensorDataRepository);
   }
 
   async execute(node: WorkflowNode, input: unknown, context: ExecutionContext) {
@@ -115,6 +122,9 @@ export class NodeExecutor {
 
       // ── Integration blocks ───────────────────────────────────────────────────
       case 'http-request':    return this.httpRequestHandler.execute(node, input);
+
+      // ── Custom calculation ────────────────────────────────────────────────────
+      case 'custom-calc':     return this.customCalcHandler.execute(node, input);
 
       default: return input;
     }

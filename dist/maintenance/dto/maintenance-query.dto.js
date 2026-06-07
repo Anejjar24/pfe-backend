@@ -10,6 +10,7 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.MaintenanceQueryDto = void 0;
+const swagger_1 = require("@nestjs/swagger");
 const class_transformer_1 = require("class-transformer");
 const class_validator_1 = require("class-validator");
 const Maintenance_entity_1 = require("../../database/entities/Maintenance.entity");
@@ -21,6 +22,7 @@ class MaintenanceQueryDto {
 }
 exports.MaintenanceQueryDto = MaintenanceQueryDto;
 __decorate([
+    (0, swagger_1.ApiPropertyOptional)({ minimum: 1, default: 1 }),
     (0, class_validator_1.IsOptional)(),
     (0, class_transformer_1.Type)(() => Number),
     (0, class_validator_1.IsInt)(),
@@ -28,6 +30,7 @@ __decorate([
     __metadata("design:type", Number)
 ], MaintenanceQueryDto.prototype, "page", void 0);
 __decorate([
+    (0, swagger_1.ApiPropertyOptional)({ minimum: 1, maximum: 100, default: 20 }),
     (0, class_validator_1.IsOptional)(),
     (0, class_transformer_1.Type)(() => Number),
     (0, class_validator_1.IsInt)(),
@@ -36,21 +39,25 @@ __decorate([
     __metadata("design:type", Number)
 ], MaintenanceQueryDto.prototype, "limit", void 0);
 __decorate([
+    (0, swagger_1.ApiPropertyOptional)({ description: 'Filter by station UUID' }),
     (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.IsUUID)(),
     __metadata("design:type", String)
 ], MaintenanceQueryDto.prototype, "stationId", void 0);
 __decorate([
+    (0, swagger_1.ApiPropertyOptional)({ enum: Maintenance_entity_1.MaintenanceStatus }),
     (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.IsEnum)(Maintenance_entity_1.MaintenanceStatus),
     __metadata("design:type", String)
 ], MaintenanceQueryDto.prototype, "status", void 0);
 __decorate([
+    (0, swagger_1.ApiPropertyOptional)({ enum: Maintenance_entity_1.MaintenanceType }),
     (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.IsEnum)(Maintenance_entity_1.MaintenanceType),
     __metadata("design:type", String)
 ], MaintenanceQueryDto.prototype, "type", void 0);
 __decorate([
+    (0, swagger_1.ApiPropertyOptional)({ enum: Maintenance_entity_1.MaintenancePriority }),
     (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.IsEnum)(Maintenance_entity_1.MaintenancePriority),
     __metadata("design:type", String)

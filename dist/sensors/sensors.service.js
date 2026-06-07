@@ -16,14 +16,21 @@ exports.SensorsService = void 0;
 const common_1 = require("@nestjs/common");
 const typeorm_1 = require("@nestjs/typeorm");
 const typeorm_2 = require("typeorm");
+const cache_manager_1 = require("@nestjs/cache-manager");
 const Sensor_entity_1 = require("../database/entities/Sensor.entity");
 const SensorData_entity_1 = require("../database/entities/SensorData.entity");
 const Station_entity_1 = require("../database/entities/Station.entity");
+const realtime_service_1 = require("../realtime/realtime.service");
+const SENSOR_LIST_TTL = 60;
+const SENSOR_LIST_PREFIX = 'sensors:list:';
 let SensorsService = class SensorsService {
-    constructor(sensorRepository, sensorDataRepository, stationRepository) {
+    constructor(sensorRepository, sensorDataRepository, stationRepository, cacheManager, realtimeService) {
         this.sensorRepository = sensorRepository;
         this.sensorDataRepository = sensorDataRepository;
         this.stationRepository = stationRepository;
+        this.cacheManager = cacheManager;
+        this.realtimeService = realtimeService;
+        this.listCacheKeys = new Set();
     }
     async create(dto) {
         const station = await this.stationRepository.findOne({ where: { id: dto.stationId } });
@@ -31,9 +38,15 @@ let SensorsService = class SensorsService {
             throw new common_1.NotFoundException(`Station "${dto.stationId}" was not found`);
         const { stationId, ...sensorPayload } = dto;
         const sensor = this.sensorRepository.create({ ...sensorPayload, station });
-        return this.sensorRepository.save(sensor);
+        const saved = await this.sensorRepository.save(sensor);
+        await this.clearListCache();
+        return saved;
     }
     async findAll(query) {
+        const cacheKey = `${SENSOR_LIST_PREFIX}${JSON.stringify(query)}`;
+        const cached = await this.cacheManager.get(cacheKey);
+        if (cached)
+            return cached;
         const page = query.page ?? 1;
         const limit = query.limit ?? 20;
         const where = {};
@@ -52,7 +65,10 @@ let SensorsService = class SensorsService {
             skip: (page - 1) * limit,
             take: limit,
         });
-        return { data, meta: { total, page, limit, pages: Math.ceil(total / limit) } };
+        const result = { data, meta: { total, page, limit, pages: Math.ceil(total / limit) } };
+        await this.cacheManager.set(cacheKey, result, SENSOR_LIST_TTL * 1000);
+        this.listCacheKeys.add(cacheKey);
+        return result;
     }
     async findOne(id) {
         const sensor = await this.sensorRepository.findOne({
@@ -73,11 +89,14 @@ let SensorsService = class SensorsService {
                 throw new common_1.NotFoundException(`Station "${stationId}" was not found`);
             sensor.station = station;
         }
-        return this.sensorRepository.save(sensor);
+        const saved = await this.sensorRepository.save(sensor);
+        await this.clearListCache();
+        return saved;
     }
     async remove(id) {
         const sensor = await this.findOne(id);
         await this.sensorRepository.remove(sensor);
+        await this.clearListCache();
         return { deleted: true, id };
     }
     async findData(sensorId, limit = 100) {
@@ -88,6 +107,82 @@ let SensorsService = class SensorsService {
             take: limit,
         });
     }
+    async injectReading(sensorId, value) {
+        const sensor = await this.sensorRepository.findOne({
+            where: { id: sensorId },
+            relations: ['station'],
+        });
+        if (!sensor)
+            throw new common_1.NotFoundException(`Sensor "${sensorId}" was not found`);
+        sensor.lastReading = value;
+        sensor.lastReadingAt = new Date();
+        await this.sensorRepository.save(sensor);
+        await this.sensorDataRepository.save(this.sensorDataRepository.create({
+            sensor,
+            value,
+            timestamp: sensor.lastReadingAt,
+            source: 'manual',
+            qualityFlags: {},
+        }));
+        await this.clearListCache();
+        const result = {
+            sensorId: sensor.id,
+            name: sensor.name,
+            value: sensor.lastReading,
+            unit: sensor.unit,
+            timestamp: sensor.lastReadingAt,
+            status: sensor.status,
+            station: sensor.station ? { id: sensor.station.id, name: sensor.station.name } : null,
+        };
+        if (this.realtimeService) {
+            const thresholdViolated = (sensor.minThreshold !== null && sensor.minThreshold !== undefined && value < Number(sensor.minThreshold)) ||
+                (sensor.maxThreshold !== null && sensor.maxThreshold !== undefined && value > Number(sensor.maxThreshold));
+            this.realtimeService.broadcastToAll('sensor-update', {
+                sensorId: sensor.id,
+                stationId: sensor.station?.id ?? null,
+                value,
+                timestamp: sensor.lastReadingAt,
+                thresholdViolated,
+                status: sensor.status,
+                source: 'simulator',
+            });
+        }
+        return result;
+    }
+    async exportDataCsv(sensorId, limit, from, to) {
+        const sensor = await this.findOne(sensorId);
+        const where = { sensor: { id: sensorId } };
+        if (from && to) {
+            where.timestamp = (0, typeorm_2.Between)(new Date(from), new Date(to));
+        }
+        else if (from) {
+            where.timestamp = (0, typeorm_2.MoreThanOrEqual)(new Date(from));
+        }
+        else if (to) {
+            where.timestamp = (0, typeorm_2.LessThanOrEqual)(new Date(to));
+        }
+        const data = await this.sensorDataRepository.find({
+            where,
+            order: { timestamp: 'DESC' },
+            take: limit,
+        });
+        const header = 'id,timestamp,value,unit,source,accuracy';
+        const rows = data.map((d) => [
+            d.id,
+            d.timestamp?.toISOString() ?? '',
+            d.value,
+            sensor.unit ?? '',
+            d.source ?? '',
+            d.accuracy ?? '',
+        ].join(','));
+        return [header, ...rows].join('\r\n');
+    }
+    async clearListCache() {
+        for (const key of this.listCacheKeys) {
+            await this.cacheManager.del(key);
+        }
+        this.listCacheKeys.clear();
+    }
 };
 exports.SensorsService = SensorsService;
 exports.SensorsService = SensorsService = __decorate([
@@ -95,8 +190,12 @@ exports.SensorsService = SensorsService = __decorate([
     __param(0, (0, typeorm_1.InjectRepository)(Sensor_entity_1.Sensor)),
     __param(1, (0, typeorm_1.InjectRepository)(SensorData_entity_1.SensorData)),
     __param(2, (0, typeorm_1.InjectRepository)(Station_entity_1.Station)),
+    __param(3, (0, common_1.Inject)(cache_manager_1.CACHE_MANAGER)),
+    __param(4, (0, common_1.Optional)()),
     __metadata("design:paramtypes", [typeorm_2.Repository,
         typeorm_2.Repository,
-        typeorm_2.Repository])
+        typeorm_2.Repository,
+        cache_manager_1.Cache,
+        realtime_service_1.RealtimeService])
 ], SensorsService);
 //# sourceMappingURL=sensors.service.js.map

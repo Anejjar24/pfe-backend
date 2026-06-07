@@ -1,7 +1,9 @@
 import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
+import { LogoutDto } from './dto/logout.dto';
 import { RefreshTokenDto } from './dto/refresh-token.dto';
 import { RegisterDto } from './dto/register.dto';
+import { UpdateProfileDto } from './dto/update-profile.dto';
 import { User } from '../database/entities/User.entity';
 export declare class AuthController {
     private readonly authService;
@@ -47,7 +49,7 @@ export declare class AuthController {
     }): Promise<User>;
     logout(req: {
         user: User;
-    }): Promise<{
+    }, dto: LogoutDto): Promise<{
         message: string;
     }>;
     refresh(dto: RefreshTokenDto): Promise<{
@@ -67,5 +69,21 @@ export declare class AuthController {
         };
         access_token: string;
         refresh_token: string;
+    }>;
+    updateProfile(req: {
+        user: User;
+    }, dto: UpdateProfileDto): Promise<{
+        id: string;
+        email: string;
+        firstname: string;
+        lastname: string;
+        role: import("../database/entities/User.entity").UserRole;
+        isActive: boolean;
+        createdAt: Date;
+        updatedAt: Date;
+        stations: any[];
+        assignedMaintenances: any[];
+        createdMaintenances: any[];
+        createdWorkflows: any[];
     }>;
 }

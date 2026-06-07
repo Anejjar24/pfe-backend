@@ -3,7 +3,12 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.ThresholdCheckHandler = void 0;
 class ThresholdCheckHandler {
     execute(node, input) {
-        const value = Number(input);
+        const raw = typeof input === 'object' &&
+            input !== null &&
+            'value' in input
+            ? input.value
+            : input;
+        const value = Number(raw);
         const min = node.data?.minThreshold != null ? Number(node.data.minThreshold) : null;
         const max = node.data?.maxThreshold != null ? Number(node.data.maxThreshold) : null;
         const mode = String(node.data?.mode || 'between');

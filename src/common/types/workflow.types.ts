@@ -22,7 +22,9 @@ export type WorkflowNodeType =
   | 'stream-filter'
   | 'data-output'
   // Integration blocks
-  | 'http-request';
+  | 'http-request'
+  // Custom calculation
+  | 'custom-calc';
 
 export interface WorkflowNode {
   id: string;

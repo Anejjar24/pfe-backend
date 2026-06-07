@@ -18,10 +18,12 @@ const typeorm_1 = require("@nestjs/typeorm");
 const crypto_1 = require("crypto");
 const typeorm_2 = require("typeorm");
 const Workflow_entity_1 = require("../database/entities/Workflow.entity");
+const WorkflowExecution_entity_1 = require("../database/entities/WorkflowExecution.entity");
 const flow_validator_service_1 = require("./flow-validator.service");
 let FlowsService = class FlowsService {
-    constructor(workflowRepository, validator) {
+    constructor(workflowRepository, executionRepository, validator) {
         this.workflowRepository = workflowRepository;
+        this.executionRepository = executionRepository;
         this.validator = validator;
     }
     async create(dto, user) {
@@ -32,6 +34,9 @@ let FlowsService = class FlowsService {
             name: dto.name || dto.graph.name || 'Untitled workflow',
             graph: { ...dto.graph, id },
             createdBy: user,
+            triggerType: dto.triggerType ?? Workflow_entity_1.WorkflowTriggerType.MANUAL,
+            triggerConfig: dto.triggerConfig ?? {},
+            isActive: dto.isActive ?? false,
         });
         return this.workflowRepository.save(workflow);
     }
@@ -55,8 +60,24 @@ let FlowsService = class FlowsService {
         this.validator.validate(dto.graph);
         workflow.name = dto.name || workflow.name;
         workflow.graph = { ...dto.graph, id };
+        if (dto.triggerType !== undefined)
+            workflow.triggerType = dto.triggerType;
+        if (dto.triggerConfig !== undefined)
+            workflow.triggerConfig = dto.triggerConfig;
+        if (dto.isActive !== undefined)
+            workflow.isActive = dto.isActive;
         if (user)
             workflow.updatedBy = user;
+        return this.workflowRepository.save(workflow);
+    }
+    async activate(id) {
+        const workflow = await this.findOne(id);
+        workflow.isActive = true;
+        return this.workflowRepository.save(workflow);
+    }
+    async deactivate(id) {
+        const workflow = await this.findOne(id);
+        workflow.isActive = false;
         return this.workflowRepository.save(workflow);
     }
     async remove(id) {
@@ -64,12 +85,23 @@ let FlowsService = class FlowsService {
         await this.workflowRepository.remove(workflow);
         return { deleted: true, id };
     }
+    async getExecutions(workflowId) {
+        await this.findOne(workflowId);
+        return this.executionRepository.find({
+            where: { workflow: { id: workflowId } },
+            relations: ['triggeredBy'],
+            order: { startedAt: 'DESC' },
+            take: 50,
+        });
+    }
 };
 exports.FlowsService = FlowsService;
 exports.FlowsService = FlowsService = __decorate([
     (0, common_1.Injectable)(),
     __param(0, (0, typeorm_1.InjectRepository)(Workflow_entity_1.Workflow)),
+    __param(1, (0, typeorm_1.InjectRepository)(WorkflowExecution_entity_1.WorkflowExecution)),
     __metadata("design:paramtypes", [typeorm_2.Repository,
+        typeorm_2.Repository,
         flow_validator_service_1.FlowValidatorService])
 ], FlowsService);
 //# sourceMappingURL=flows.service.js.map

@@ -14,6 +14,7 @@ var __param = (this && this.__param) || function (paramIndex, decorator) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.SensorsController = void 0;
 const common_1 = require("@nestjs/common");
+const swagger_1 = require("@nestjs/swagger");
 const roles_decorator_1 = require("../common/decorators/roles.decorator");
 const jwt_guard_1 = require("../common/guards/jwt.guard");
 const roles_guard_1 = require("../common/guards/roles.guard");
@@ -32,6 +33,9 @@ let SensorsController = class SensorsController {
     findOne(id) {
         return this.sensorsService.findOne(id);
     }
+    exportDataCsv(id, limit, from, to) {
+        return this.sensorsService.exportDataCsv(id, Number(limit) || 5_000, from, to);
+    }
     findData(id, limit) {
         return this.sensorsService.findData(id, Number(limit) || 100);
     }
@@ -44,10 +48,15 @@ let SensorsController = class SensorsController {
     async remove(id) {
         await this.sensorsService.remove(id);
     }
+    injectReading(id, value) {
+        return this.sensorsService.injectReading(id, value);
+    }
 };
 exports.SensorsController = SensorsController;
 __decorate([
     (0, common_1.Get)(),
+    (0, swagger_1.ApiOperation)({ summary: 'List sensors (paginated, filterable)' }),
+    (0, swagger_1.ApiResponse)({ status: 200, description: 'Paginated sensor list (cached 60 s)' }),
     __param(0, (0, common_1.Query)()),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [sensor_query_dto_1.SensorQueryDto]),
@@ -55,13 +64,39 @@ __decorate([
 ], SensorsController.prototype, "findAll", null);
 __decorate([
     (0, common_1.Get)(':id'),
+    (0, swagger_1.ApiOperation)({ summary: 'Get a single sensor with station + recent alerts' }),
+    (0, swagger_1.ApiParam)({ name: 'id', description: 'Sensor UUID' }),
+    (0, swagger_1.ApiResponse)({ status: 200, description: 'Sensor object' }),
+    (0, swagger_1.ApiResponse)({ status: 404, description: 'Sensor not found' }),
     __param(0, (0, common_1.Param)('id')),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [String]),
     __metadata("design:returntype", void 0)
 ], SensorsController.prototype, "findOne", null);
 __decorate([
+    (0, common_1.Get)(':id/data/export'),
+    (0, common_1.Header)('Content-Type', 'text/csv; charset=utf-8'),
+    (0, common_1.Header)('Content-Disposition', 'attachment; filename="sensor-data.csv"'),
+    (0, swagger_1.ApiOperation)({ summary: 'Export sensor readings as a CSV file (max 5 000 rows)' }),
+    (0, swagger_1.ApiParam)({ name: 'id', description: 'Sensor UUID' }),
+    (0, swagger_1.ApiQuery)({ name: 'limit', required: false, description: 'Max rows to export (default 5000)' }),
+    (0, swagger_1.ApiQuery)({ name: 'from', required: false, description: 'ISO date lower bound' }),
+    (0, swagger_1.ApiQuery)({ name: 'to', required: false, description: 'ISO date upper bound' }),
+    (0, swagger_1.ApiResponse)({ status: 200, description: 'CSV file download' }),
+    __param(0, (0, common_1.Param)('id')),
+    __param(1, (0, common_1.Query)('limit')),
+    __param(2, (0, common_1.Query)('from')),
+    __param(3, (0, common_1.Query)('to')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, Number, String, String]),
+    __metadata("design:returntype", Promise)
+], SensorsController.prototype, "exportDataCsv", null);
+__decorate([
     (0, common_1.Get)(':id/data'),
+    (0, swagger_1.ApiOperation)({ summary: 'Get historical sensor readings' }),
+    (0, swagger_1.ApiParam)({ name: 'id', description: 'Sensor UUID' }),
+    (0, swagger_1.ApiQuery)({ name: 'limit', required: false, description: 'Max readings to return (default 100)' }),
+    (0, swagger_1.ApiResponse)({ status: 200, description: 'Array of SensorData records (newest first)' }),
     __param(0, (0, common_1.Param)('id')),
     __param(1, (0, common_1.Query)('limit')),
     __metadata("design:type", Function),
@@ -71,6 +106,8 @@ __decorate([
 __decorate([
     (0, common_1.Post)(),
     (0, roles_decorator_1.Roles)(User_entity_1.UserRole.ADMIN, User_entity_1.UserRole.OPERATOR),
+    (0, swagger_1.ApiOperation)({ summary: 'Create a new sensor (admin/operator)' }),
+    (0, swagger_1.ApiResponse)({ status: 201, description: 'Sensor created' }),
     __param(0, (0, common_1.Body)()),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [create_sensor_dto_1.CreateSensorDto]),
@@ -79,6 +116,9 @@ __decorate([
 __decorate([
     (0, common_1.Patch)(':id'),
     (0, roles_decorator_1.Roles)(User_entity_1.UserRole.ADMIN, User_entity_1.UserRole.OPERATOR),
+    (0, swagger_1.ApiOperation)({ summary: 'Update a sensor (admin/operator)' }),
+    (0, swagger_1.ApiParam)({ name: 'id', description: 'Sensor UUID' }),
+    (0, swagger_1.ApiResponse)({ status: 200, description: 'Updated sensor' }),
     __param(0, (0, common_1.Param)('id')),
     __param(1, (0, common_1.Body)()),
     __metadata("design:type", Function),
@@ -89,12 +129,42 @@ __decorate([
     (0, common_1.Delete)(':id'),
     (0, roles_decorator_1.Roles)(User_entity_1.UserRole.ADMIN),
     (0, common_1.HttpCode)(common_1.HttpStatus.NO_CONTENT),
+    (0, swagger_1.ApiOperation)({ summary: 'Delete a sensor (admin only)' }),
+    (0, swagger_1.ApiParam)({ name: 'id', description: 'Sensor UUID' }),
+    (0, swagger_1.ApiResponse)({ status: 204, description: 'Deleted' }),
     __param(0, (0, common_1.Param)('id')),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [String]),
     __metadata("design:returntype", Promise)
 ], SensorsController.prototype, "remove", null);
+__decorate([
+    (0, common_1.Post)(':id/reading'),
+    (0, roles_decorator_1.Roles)(User_entity_1.UserRole.ADMIN, User_entity_1.UserRole.OPERATOR),
+    (0, swagger_1.ApiOperation)({
+        summary: 'Manually inject a sensor reading (admin/operator)',
+        description: 'Simulates an MQTT data point — updates lastReading/lastReadingAt on the sensor ' +
+            'and persists a SensorData record. Use this to test automation flows in the Builder ' +
+            'without a live MQTT device.',
+    }),
+    (0, swagger_1.ApiParam)({ name: 'id', description: 'Sensor UUID' }),
+    (0, swagger_1.ApiBody)({
+        schema: {
+            type: 'object',
+            required: ['value'],
+            properties: { value: { type: 'number', example: 25.5 } },
+        },
+    }),
+    (0, swagger_1.ApiResponse)({ status: 201, description: 'Reading injected — returns updated sensor snapshot' }),
+    (0, swagger_1.ApiResponse)({ status: 404, description: 'Sensor not found' }),
+    __param(0, (0, common_1.Param)('id')),
+    __param(1, (0, common_1.Body)('value')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, Number]),
+    __metadata("design:returntype", void 0)
+], SensorsController.prototype, "injectReading", null);
 exports.SensorsController = SensorsController = __decorate([
+    (0, swagger_1.ApiTags)('sensors'),
+    (0, swagger_1.ApiBearerAuth)('access-token'),
     (0, common_1.Controller)('sensors'),
     (0, common_1.UseGuards)(jwt_guard_1.JwtGuard, roles_guard_1.RolesGuard),
     __metadata("design:paramtypes", [sensors_service_1.SensorsService])

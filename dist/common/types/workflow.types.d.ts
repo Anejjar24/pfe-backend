@@ -1,4 +1,4 @@
-export type WorkflowNodeType = 'input' | 'output' | 'action' | 'decision' | 'delay' | 'api' | 'notification' | 'sensor-read' | 'threshold-check' | 'pump-control' | 'alert-trigger' | 'mqtt-publish' | 'station-control' | 'http-request';
+export type WorkflowNodeType = 'input' | 'output' | 'action' | 'decision' | 'delay' | 'api' | 'notification' | 'data-transform' | 'sensor-read' | 'threshold-check' | 'pump-control' | 'alert-trigger' | 'mqtt-publish' | 'station-control' | 'value-transform' | 'sensor-check' | 'data-aggregate' | 'stream-filter' | 'data-output' | 'http-request' | 'custom-calc';
 export interface WorkflowNode {
     id: string;
     type: WorkflowNodeType;

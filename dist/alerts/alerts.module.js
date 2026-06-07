@@ -13,6 +13,7 @@ const Alert_entity_1 = require("../database/entities/Alert.entity");
 const Sensor_entity_1 = require("../database/entities/Sensor.entity");
 const Station_entity_1 = require("../database/entities/Station.entity");
 const realtime_module_1 = require("../realtime/realtime.module");
+const notifications_module_1 = require("../notifications/notifications.module");
 const alerts_controller_1 = require("./alerts.controller");
 const alerts_service_1 = require("./alerts.service");
 let AlertsModule = class AlertsModule {
@@ -20,7 +21,11 @@ let AlertsModule = class AlertsModule {
 exports.AlertsModule = AlertsModule;
 exports.AlertsModule = AlertsModule = __decorate([
     (0, common_1.Module)({
-        imports: [typeorm_1.TypeOrmModule.forFeature([Alert_entity_1.Alert, Station_entity_1.Station, Sensor_entity_1.Sensor]), realtime_module_1.RealtimeModule],
+        imports: [
+            typeorm_1.TypeOrmModule.forFeature([Alert_entity_1.Alert, Station_entity_1.Station, Sensor_entity_1.Sensor]),
+            realtime_module_1.RealtimeModule,
+            notifications_module_1.NotificationsModule,
+        ],
         controllers: [alerts_controller_1.AlertsController],
         providers: [alerts_service_1.AlertsService],
         exports: [alerts_service_1.AlertsService],
