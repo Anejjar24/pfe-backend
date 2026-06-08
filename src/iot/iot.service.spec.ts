@@ -6,6 +6,7 @@ import { SensorData } from '../database/entities/SensorData.entity';
 import { RealtimeService } from '../realtime/realtime.service';
 import { AlertsService } from '../alerts/alerts.service';
 import { AlertSeverity, AlertType } from '../database/entities/Alert.entity';
+import { KafkaProducerService } from './kafka/kafka.producer.service';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -65,6 +66,10 @@ const mockAlertsService = () => ({
   create: jest.fn() as jest.MockedFunction<any>,
 });
 
+const mockKafkaProducerService = () => ({
+  publishSensorReading: jest.fn().mockResolvedValue(undefined),
+});
+
 // ─── Tests ────────────────────────────────────────────────────────────────────
 
 describe('IotService', () => {
@@ -73,6 +78,7 @@ describe('IotService', () => {
   let sensorDataRepo: ReturnType<typeof mockSensorDataRepo>;
   let realtimeService: ReturnType<typeof mockRealtimeService>;
   let alertsService: ReturnType<typeof mockAlertsService>;
+  let kafkaProducer: ReturnType<typeof mockKafkaProducerService>;
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -82,6 +88,7 @@ describe('IotService', () => {
         { provide: getRepositoryToken(SensorData), useFactory: mockSensorDataRepo },
         { provide: RealtimeService, useFactory: mockRealtimeService },
         { provide: AlertsService, useFactory: mockAlertsService },
+        { provide: KafkaProducerService, useFactory: mockKafkaProducerService },
       ],
     }).compile();
 
@@ -90,6 +97,7 @@ describe('IotService', () => {
     sensorDataRepo = module.get(getRepositoryToken(SensorData));
     realtimeService = module.get(RealtimeService);
     alertsService = module.get(AlertsService);
+    kafkaProducer = module.get(KafkaProducerService);
 
     // Default return values
     sensorRepo.findOne.mockResolvedValue(null);
@@ -139,6 +147,22 @@ describe('IotService', () => {
         expect.objectContaining({
           sensorId: 'sensor-uuid',
           value: 30,
+        }),
+      );
+    });
+
+    it('publishes a sensor reading event to Kafka after saving', async () => {
+      const sensor = makeSensor({ type: SensorType.PRESSURE, unit: 'bar' });
+      sensorRepo.findOne.mockResolvedValue(sensor);
+
+      await service.processSensorData('sensor-uuid', 42);
+
+      expect(kafkaProducer.publishSensorReading).toHaveBeenCalledWith(
+        expect.objectContaining({
+          sensorId: 'sensor-uuid',
+          value: 42,
+          type: SensorType.PRESSURE,
+          unit: 'bar',
         }),
       );
     });

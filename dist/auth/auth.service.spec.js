@@ -146,7 +146,7 @@ describe('AuthService', () => {
         });
         it('denylists refresh token when provided', async () => {
             await service.logout(mockUser(), 'some_refresh_token');
-            expect(cacheManager.set).toHaveBeenCalledWith(expect.stringMatching(/^rt:deny:/), '1', expect.any(Object));
+            expect(cacheManager.set).toHaveBeenCalledWith(expect.stringMatching(/^rt:deny:/), '1', expect.any(Number));
         });
     });
     describe('refreshToken', () => {
@@ -163,7 +163,7 @@ describe('AuthService', () => {
             const result = await service.refreshToken('valid_refresh_token');
             expect(result).toHaveProperty('access_token');
             expect(result).toHaveProperty('refresh_token');
-            expect(cacheManager.set).toHaveBeenCalledWith(expect.stringMatching(/^rt:deny:/), '1', expect.any(Object));
+            expect(cacheManager.set).toHaveBeenCalledWith(expect.stringMatching(/^rt:deny:/), '1', expect.any(Number));
         });
     });
 });

@@ -6,6 +6,7 @@ import { SensorData } from '../database/entities/SensorData.entity';
 import { RealtimeService } from '../realtime/realtime.service';
 import { AlertsService } from '../alerts/alerts.service';
 import { AlertSeverity, AlertType } from '../database/entities/Alert.entity';
+import { KafkaProducerService } from './kafka/kafka.producer.service';
 
 @Injectable()
 export class IotService {
@@ -18,6 +19,7 @@ export class IotService {
     private readonly sensorDataRepository: Repository<SensorData>,
     private readonly realtimeService: RealtimeService,
     private readonly alertsService: AlertsService,
+    private readonly kafkaProducer: KafkaProducerService,
   ) {}
 
   async processSensorData(sensorId: string, value: number): Promise<void> {
@@ -49,6 +51,20 @@ export class IotService {
         qualityFlags: {},
       });
       await this.sensorDataRepository.save(sensorData);
+
+      // Publish to Kafka (fire-and-forget — never blocks the MQTT pipeline)
+      this.kafkaProducer.publishSensorReading({
+        sensorId: sensor.id,
+        stationId: sensor.station?.id,
+        type: sensor.type,
+        value,
+        unit: sensor.unit,
+        timestamp: sensorData.timestamp.toISOString(),
+        thresholdViolated,
+      }).catch((err) => {
+        const msg = err instanceof Error ? err.message : String(err);
+        this.logger.error(`Kafka publish failed for sensor ${sensorId}: ${msg}`);
+      });
 
       // Broadcast update via WebSocket
       this.realtimeService.broadcastToAll('sensor-update', {

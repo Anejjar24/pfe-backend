@@ -8,6 +8,7 @@ const SensorData_entity_1 = require("../database/entities/SensorData.entity");
 const realtime_service_1 = require("../realtime/realtime.service");
 const alerts_service_1 = require("../alerts/alerts.service");
 const Alert_entity_1 = require("../database/entities/Alert.entity");
+const kafka_producer_service_1 = require("./kafka/kafka.producer.service");
 const makeSensor = (overrides = {}) => {
     const sensor = {
         id: 'sensor-uuid',
@@ -59,12 +60,16 @@ const mockRealtimeService = () => ({
 const mockAlertsService = () => ({
     create: jest.fn(),
 });
+const mockKafkaProducerService = () => ({
+    publishSensorReading: jest.fn().mockResolvedValue(undefined),
+});
 describe('IotService', () => {
     let service;
     let sensorRepo;
     let sensorDataRepo;
     let realtimeService;
     let alertsService;
+    let kafkaProducer;
     beforeEach(async () => {
         const module = await testing_1.Test.createTestingModule({
             providers: [
@@ -73,6 +78,7 @@ describe('IotService', () => {
                 { provide: (0, typeorm_1.getRepositoryToken)(SensorData_entity_1.SensorData), useFactory: mockSensorDataRepo },
                 { provide: realtime_service_1.RealtimeService, useFactory: mockRealtimeService },
                 { provide: alerts_service_1.AlertsService, useFactory: mockAlertsService },
+                { provide: kafka_producer_service_1.KafkaProducerService, useFactory: mockKafkaProducerService },
             ],
         }).compile();
         service = module.get(iot_service_1.IotService);
@@ -80,6 +86,7 @@ describe('IotService', () => {
         sensorDataRepo = module.get((0, typeorm_1.getRepositoryToken)(SensorData_entity_1.SensorData));
         realtimeService = module.get(realtime_service_1.RealtimeService);
         alertsService = module.get(alerts_service_1.AlertsService);
+        kafkaProducer = module.get(kafka_producer_service_1.KafkaProducerService);
         sensorRepo.findOne.mockResolvedValue(null);
         sensorRepo.save.mockResolvedValue(makeSensor());
         sensorRepo.find.mockResolvedValue([]);
@@ -110,6 +117,17 @@ describe('IotService', () => {
             expect(realtimeService.broadcastToAll).toHaveBeenCalledWith('sensor-update', expect.objectContaining({
                 sensorId: 'sensor-uuid',
                 value: 30,
+            }));
+        });
+        it('publishes a sensor reading event to Kafka after saving', async () => {
+            const sensor = makeSensor({ type: Sensor_entity_1.SensorType.PRESSURE, unit: 'bar' });
+            sensorRepo.findOne.mockResolvedValue(sensor);
+            await service.processSensorData('sensor-uuid', 42);
+            expect(kafkaProducer.publishSensorReading).toHaveBeenCalledWith(expect.objectContaining({
+                sensorId: 'sensor-uuid',
+                value: 42,
+                type: Sensor_entity_1.SensorType.PRESSURE,
+                unit: 'bar',
             }));
         });
         it('does NOT create alert when threshold is not violated', async () => {

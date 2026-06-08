@@ -1,6 +1,7 @@
-import { Controller, Get, NotFoundException, Param, Query, UseGuards } from '@nestjs/common';
+import { Controller, Get, NotFoundException, Param, ParseIntPipe, Query, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiParam, ApiQuery, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { JwtGuard } from '../common/guards/jwt.guard';
+import { KafkaConsumerService } from '../iot/kafka/kafka.consumer.service';
 import { AnalyticsService } from './analytics.service';
 import { SensorStatsQueryDto, StationHistoryQueryDto } from './dto/analytics-query.dto';
 
@@ -9,7 +10,40 @@ import { SensorStatsQueryDto, StationHistoryQueryDto } from './dto/analytics-que
 @Controller('analytics')
 @UseGuards(JwtGuard)
 export class AnalyticsController {
-  constructor(private readonly analyticsService: AnalyticsService) {}
+  constructor(
+    private readonly analyticsService: AnalyticsService,
+    private readonly kafkaConsumer: KafkaConsumerService,
+  ) {}
+
+  @Get('pipeline/stats')
+  @ApiOperation({ summary: 'Kafka pipeline health: messages consumed, last event timestamps, consumer group' })
+  @ApiResponse({ status: 200, description: 'Pipeline stats object' })
+  getPipelineStats() {
+    return {
+      ...this.kafkaConsumer.getPipelineStats(),
+      consumerRunning: this.kafkaConsumer.getIsRunning(),
+    };
+  }
+
+  @Get('kpis')
+  @ApiOperation({ summary: 'Pre-computed sensor KPIs from Spark aggregation (sensor_aggregates table)' })
+  @ApiQuery({ name: 'granularity', required: false, enum: ['hourly', 'daily'], description: 'Bucket size (default: hourly)' })
+  @ApiQuery({ name: 'hours', required: false, description: 'Look-back window in hours (default: 24)' })
+  @ApiResponse({ status: 200, description: 'KPI rows + anomaly summary per station' })
+  async getKpis(
+    @Query('granularity') granularity?: 'hourly' | 'daily',
+    @Query('hours', new ParseIntPipe({ optional: true })) hours?: number,
+  ) {
+    return this.analyticsService.getKpis(granularity ?? 'hourly', hours ?? 24);
+  }
+
+  @Get('system-metrics')
+  @ApiOperation({ summary: 'System throughput from TimescaleDB continuous aggregates (top sensors by reading count)' })
+  @ApiQuery({ name: 'hours', required: false, description: 'Look-back window in hours (default: 24)' })
+  @ApiResponse({ status: 200, description: 'System-level throughput metrics' })
+  async getSystemMetrics(@Query('hours', new ParseIntPipe({ optional: true })) hours?: number) {
+    return this.analyticsService.getSystemMetrics(hours ?? 24);
+  }
 
   @Get('overview')
   @ApiOperation({ summary: 'System-wide KPIs: station counts, active sensors, open alerts, pending maintenance' })

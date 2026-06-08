@@ -5,6 +5,7 @@ const common_1 = require("@nestjs/common");
 const typeorm_1 = require("@nestjs/typeorm");
 const flows_service_1 = require("./flows.service");
 const Workflow_entity_1 = require("../database/entities/Workflow.entity");
+const WorkflowExecution_entity_1 = require("../database/entities/WorkflowExecution.entity");
 const flow_validator_service_1 = require("./flow-validator.service");
 const makeGraph = () => ({
     id: 'graph-uuid',
@@ -38,23 +39,33 @@ const mockWorkflowRepo = () => ({
     find: jest.fn(),
     remove: jest.fn(),
 });
+const mockWorkflowExecutionRepo = () => ({
+    create: jest.fn((dto) => ({ ...dto })),
+    save: jest.fn(),
+    findOne: jest.fn(),
+    find: jest.fn(),
+    findAndCount: jest.fn().mockResolvedValue([[], 0]),
+});
 const mockFlowValidator = () => ({
     validate: jest.fn().mockReturnValue(true),
 });
 describe('FlowsService', () => {
     let service;
     let workflowRepo;
+    let executionRepo;
     let validator;
     beforeEach(async () => {
         const module = await testing_1.Test.createTestingModule({
             providers: [
                 flows_service_1.FlowsService,
                 { provide: (0, typeorm_1.getRepositoryToken)(Workflow_entity_1.Workflow), useFactory: mockWorkflowRepo },
+                { provide: (0, typeorm_1.getRepositoryToken)(WorkflowExecution_entity_1.WorkflowExecution), useFactory: mockWorkflowExecutionRepo },
                 { provide: flow_validator_service_1.FlowValidatorService, useFactory: mockFlowValidator },
             ],
         }).compile();
         service = module.get(flows_service_1.FlowsService);
         workflowRepo = module.get((0, typeorm_1.getRepositoryToken)(Workflow_entity_1.Workflow));
+        executionRepo = module.get((0, typeorm_1.getRepositoryToken)(WorkflowExecution_entity_1.WorkflowExecution));
         validator = module.get(flow_validator_service_1.FlowValidatorService);
         workflowRepo.save.mockResolvedValue(makeWorkflow());
         workflowRepo.findOne.mockResolvedValue(null);

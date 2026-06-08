@@ -2,14 +2,15 @@
 module.exports = {
   moduleFileExtensions: ['js', 'json', 'ts'],
   rootDir: '.',
-  testMatch: ['<rootDir>/src/**/*.spec.ts', '<rootDir>/test/**/*.e2e-spec.ts'],
+  // Unit tests only — E2E tests require live infrastructure (Postgres, Kafka, Redis)
+  // Run E2E separately with: npx jest --config jest.e2e.config.js
+  testMatch: ['<rootDir>/src/**/*.spec.ts'],
   transform: {
     '^.+\\.ts$': ['ts-jest', { tsconfig: 'tsconfig.json' }],
   },
   collectCoverageFrom: ['src/**/*.ts', '!src/**/*.module.ts', '!src/main.ts'],
   coverageDirectory: 'coverage',
   testEnvironment: 'node',
-  // Make @nestjs/testing resolve correctly
   moduleNameMapper: {
     '^src/(.*)$': '<rootDir>/src/$1',
   },

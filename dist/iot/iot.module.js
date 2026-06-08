@@ -15,6 +15,8 @@ const realtime_module_1 = require("../realtime/realtime.module");
 const alerts_module_1 = require("../alerts/alerts.module");
 const iot_service_1 = require("./iot.service");
 const mqtt_client_1 = require("./mqtt/mqtt.client");
+const kafka_producer_service_1 = require("./kafka/kafka.producer.service");
+const kafka_consumer_service_1 = require("./kafka/kafka.consumer.service");
 let IotModule = class IotModule {
 };
 exports.IotModule = IotModule;
@@ -25,8 +27,8 @@ exports.IotModule = IotModule = __decorate([
             realtime_module_1.RealtimeModule,
             alerts_module_1.AlertsModule,
         ],
-        providers: [iot_service_1.IotService, mqtt_client_1.MqttClient],
-        exports: [iot_service_1.IotService, mqtt_client_1.MqttClient],
+        providers: [iot_service_1.IotService, mqtt_client_1.MqttClient, kafka_producer_service_1.KafkaProducerService, kafka_consumer_service_1.KafkaConsumerService],
+        exports: [iot_service_1.IotService, mqtt_client_1.MqttClient, kafka_producer_service_1.KafkaProducerService, kafka_consumer_service_1.KafkaConsumerService],
     })
 ], IotModule);
 //# sourceMappingURL=iot.module.js.map

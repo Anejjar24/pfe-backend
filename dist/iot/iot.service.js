@@ -22,12 +22,14 @@ const SensorData_entity_1 = require("../database/entities/SensorData.entity");
 const realtime_service_1 = require("../realtime/realtime.service");
 const alerts_service_1 = require("../alerts/alerts.service");
 const Alert_entity_1 = require("../database/entities/Alert.entity");
+const kafka_producer_service_1 = require("./kafka/kafka.producer.service");
 let IotService = IotService_1 = class IotService {
-    constructor(sensorRepository, sensorDataRepository, realtimeService, alertsService) {
+    constructor(sensorRepository, sensorDataRepository, realtimeService, alertsService, kafkaProducer) {
         this.sensorRepository = sensorRepository;
         this.sensorDataRepository = sensorDataRepository;
         this.realtimeService = realtimeService;
         this.alertsService = alertsService;
+        this.kafkaProducer = kafkaProducer;
         this.logger = new common_1.Logger(IotService_1.name);
     }
     async processSensorData(sensorId, value) {
@@ -51,6 +53,18 @@ let IotService = IotService_1 = class IotService {
                 qualityFlags: {},
             });
             await this.sensorDataRepository.save(sensorData);
+            this.kafkaProducer.publishSensorReading({
+                sensorId: sensor.id,
+                stationId: sensor.station?.id,
+                type: sensor.type,
+                value,
+                unit: sensor.unit,
+                timestamp: sensorData.timestamp.toISOString(),
+                thresholdViolated,
+            }).catch((err) => {
+                const msg = err instanceof Error ? err.message : String(err);
+                this.logger.error(`Kafka publish failed for sensor ${sensorId}: ${msg}`);
+            });
             this.realtimeService.broadcastToAll('sensor-update', {
                 sensorId: sensor.id,
                 stationId: sensor.station?.id,
@@ -121,6 +135,7 @@ exports.IotService = IotService = IotService_1 = __decorate([
     __metadata("design:paramtypes", [typeorm_2.Repository,
         typeorm_2.Repository,
         realtime_service_1.RealtimeService,
-        alerts_service_1.AlertsService])
+        alerts_service_1.AlertsService,
+        kafka_producer_service_1.KafkaProducerService])
 ], IotService);
 //# sourceMappingURL=iot.service.js.map

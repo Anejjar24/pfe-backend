@@ -11,6 +11,12 @@ export declare class AppController {
         uptime: number;
         db: {
             status: string;
+            timescaledb: string;
+            hypertable: string | {
+                chunks: any;
+                compressionEnabled: any;
+                compressionRatioPct: any;
+            };
         };
         redis: {
             status: string;

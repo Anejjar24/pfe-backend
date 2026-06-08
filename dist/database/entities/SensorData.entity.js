@@ -13,10 +13,20 @@ exports.SensorData = void 0;
 const typeorm_1 = require("typeorm");
 const Sensor_entity_1 = require("./Sensor.entity");
 let SensorData = class SensorData {
+    setDefaults() {
+        if (!this.id) {
+            this.id = crypto.randomUUID
+                ? crypto.randomUUID()
+                : require('crypto').randomUUID();
+        }
+        if (!this.timestamp) {
+            this.timestamp = new Date();
+        }
+    }
 };
 exports.SensorData = SensorData;
 __decorate([
-    (0, typeorm_1.PrimaryGeneratedColumn)('uuid'),
+    (0, typeorm_1.PrimaryColumn)({ type: 'uuid' }),
     __metadata("design:type", String)
 ], SensorData.prototype, "id", void 0);
 __decorate([
@@ -24,7 +34,7 @@ __decorate([
     __metadata("design:type", Number)
 ], SensorData.prototype, "value", void 0);
 __decorate([
-    (0, typeorm_1.Column)({ type: 'timestamp' }),
+    (0, typeorm_1.PrimaryColumn)({ type: 'timestamp' }),
     __metadata("design:type", Date)
 ], SensorData.prototype, "timestamp", void 0);
 __decorate([
@@ -48,6 +58,12 @@ __decorate([
     (0, typeorm_1.Column)({ type: 'decimal', precision: 5, scale: 2, nullable: true }),
     __metadata("design:type", Number)
 ], SensorData.prototype, "accuracy", void 0);
+__decorate([
+    (0, typeorm_1.BeforeInsert)(),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", []),
+    __metadata("design:returntype", void 0)
+], SensorData.prototype, "setDefaults", null);
 exports.SensorData = SensorData = __decorate([
     (0, typeorm_1.Entity)('sensor_data'),
     (0, typeorm_1.Index)(['sensor', 'timestamp'])

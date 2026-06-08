@@ -15,6 +15,8 @@ import { INestApplication, ValidationPipe } from '@nestjs/common';
 import * as request from 'supertest';
 import { AppModule } from '../src/app.module';
 import { DataSource } from 'typeorm';
+import { KafkaProducerService } from '../src/iot/kafka/kafka.producer.service';
+import { KafkaConsumerService } from '../src/iot/kafka/kafka.consumer.service';
 
 // ─── Mock DataSource ──────────────────────────────────────────────────────────
 
@@ -26,6 +28,8 @@ const mockDataSource = {
   isInitialized: true,
   initialize: jest.fn(async (): Promise<unknown> => mockDataSource),
   destroy: jest.fn(async () => undefined),
+  // DatabaseService.onModuleInit() calls query() to check TimescaleDB + hypertable status
+  query: jest.fn(async () => []),
   getRepository: jest.fn(() => ({
     findOne: jest.fn(async () => null),
     find: jest.fn(async () => []),
@@ -58,6 +62,11 @@ describe('Auth endpoints (e2e)', () => {
     })
       .overrideProvider(DataSource)
       .useValue(mockDataSource)
+      // Prevent KafkaJS from trying to open real TCP connections in the test environment
+      .overrideProvider(KafkaProducerService)
+      .useValue({ publishSensorReading: jest.fn(), onModuleInit: jest.fn(), onModuleDestroy: jest.fn() })
+      .overrideProvider(KafkaConsumerService)
+      .useValue({ registerReadingHandler: jest.fn(), getPipelineStats: jest.fn(() => ({})), getIsRunning: jest.fn(() => false), onModuleInit: jest.fn(), onModuleDestroy: jest.fn() })
       .compile();
 
     app = moduleFixture.createNestApplication();

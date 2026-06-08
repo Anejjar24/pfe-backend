@@ -3,6 +3,7 @@ import { NotFoundException } from '@nestjs/common';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { FlowsService } from './flows.service';
 import { Workflow, WorkflowTriggerType } from '../database/entities/Workflow.entity';
+import { WorkflowExecution } from '../database/entities/WorkflowExecution.entity';
 import { User } from '../database/entities/User.entity';
 import { FlowValidatorService } from './flow-validator.service';
 
@@ -46,6 +47,14 @@ const mockWorkflowRepo = () => ({
   remove: jest.fn() as jest.MockedFunction<any>,
 });
 
+const mockWorkflowExecutionRepo = () => ({
+  create: jest.fn((dto: any) => ({ ...dto })) as jest.MockedFunction<any>,
+  save: jest.fn() as jest.MockedFunction<any>,
+  findOne: jest.fn() as jest.MockedFunction<any>,
+  find: jest.fn() as jest.MockedFunction<any>,
+  findAndCount: jest.fn().mockResolvedValue([[], 0]) as jest.MockedFunction<any>,
+});
+
 const mockFlowValidator = () => ({
   validate: jest.fn().mockReturnValue(true) as jest.MockedFunction<any>,
 });
@@ -55,6 +64,7 @@ const mockFlowValidator = () => ({
 describe('FlowsService', () => {
   let service: FlowsService;
   let workflowRepo: ReturnType<typeof mockWorkflowRepo>;
+  let executionRepo: ReturnType<typeof mockWorkflowExecutionRepo>;
   let validator: ReturnType<typeof mockFlowValidator>;
 
   beforeEach(async () => {
@@ -62,12 +72,14 @@ describe('FlowsService', () => {
       providers: [
         FlowsService,
         { provide: getRepositoryToken(Workflow), useFactory: mockWorkflowRepo },
+        { provide: getRepositoryToken(WorkflowExecution), useFactory: mockWorkflowExecutionRepo },
         { provide: FlowValidatorService, useFactory: mockFlowValidator },
       ],
     }).compile();
 
     service = module.get(FlowsService);
     workflowRepo = module.get(getRepositoryToken(Workflow));
+    executionRepo = module.get(getRepositoryToken(WorkflowExecution));
     validator = module.get(FlowValidatorService);
 
     // Default return values

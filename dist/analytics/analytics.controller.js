@@ -16,11 +16,25 @@ exports.AnalyticsController = void 0;
 const common_1 = require("@nestjs/common");
 const swagger_1 = require("@nestjs/swagger");
 const jwt_guard_1 = require("../common/guards/jwt.guard");
+const kafka_consumer_service_1 = require("../iot/kafka/kafka.consumer.service");
 const analytics_service_1 = require("./analytics.service");
 const analytics_query_dto_1 = require("./dto/analytics-query.dto");
 let AnalyticsController = class AnalyticsController {
-    constructor(analyticsService) {
+    constructor(analyticsService, kafkaConsumer) {
         this.analyticsService = analyticsService;
+        this.kafkaConsumer = kafkaConsumer;
+    }
+    getPipelineStats() {
+        return {
+            ...this.kafkaConsumer.getPipelineStats(),
+            consumerRunning: this.kafkaConsumer.getIsRunning(),
+        };
+    }
+    async getKpis(granularity, hours) {
+        return this.analyticsService.getKpis(granularity ?? 'hourly', hours ?? 24);
+    }
+    async getSystemMetrics(hours) {
+        return this.analyticsService.getSystemMetrics(hours ?? 24);
     }
     getOverview() {
         return this.analyticsService.getOverview();
@@ -39,6 +53,36 @@ let AnalyticsController = class AnalyticsController {
     }
 };
 exports.AnalyticsController = AnalyticsController;
+__decorate([
+    (0, common_1.Get)('pipeline/stats'),
+    (0, swagger_1.ApiOperation)({ summary: 'Kafka pipeline health: messages consumed, last event timestamps, consumer group' }),
+    (0, swagger_1.ApiResponse)({ status: 200, description: 'Pipeline stats object' }),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", []),
+    __metadata("design:returntype", void 0)
+], AnalyticsController.prototype, "getPipelineStats", null);
+__decorate([
+    (0, common_1.Get)('kpis'),
+    (0, swagger_1.ApiOperation)({ summary: 'Pre-computed sensor KPIs from Spark aggregation (sensor_aggregates table)' }),
+    (0, swagger_1.ApiQuery)({ name: 'granularity', required: false, enum: ['hourly', 'daily'], description: 'Bucket size (default: hourly)' }),
+    (0, swagger_1.ApiQuery)({ name: 'hours', required: false, description: 'Look-back window in hours (default: 24)' }),
+    (0, swagger_1.ApiResponse)({ status: 200, description: 'KPI rows + anomaly summary per station' }),
+    __param(0, (0, common_1.Query)('granularity')),
+    __param(1, (0, common_1.Query)('hours', new common_1.ParseIntPipe({ optional: true }))),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, Number]),
+    __metadata("design:returntype", Promise)
+], AnalyticsController.prototype, "getKpis", null);
+__decorate([
+    (0, common_1.Get)('system-metrics'),
+    (0, swagger_1.ApiOperation)({ summary: 'System throughput from TimescaleDB continuous aggregates (top sensors by reading count)' }),
+    (0, swagger_1.ApiQuery)({ name: 'hours', required: false, description: 'Look-back window in hours (default: 24)' }),
+    (0, swagger_1.ApiResponse)({ status: 200, description: 'System-level throughput metrics' }),
+    __param(0, (0, common_1.Query)('hours', new common_1.ParseIntPipe({ optional: true }))),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Number]),
+    __metadata("design:returntype", Promise)
+], AnalyticsController.prototype, "getSystemMetrics", null);
 __decorate([
     (0, common_1.Get)('overview'),
     (0, swagger_1.ApiOperation)({ summary: 'System-wide KPIs: station counts, active sensors, open alerts, pending maintenance' }),
@@ -81,6 +125,7 @@ exports.AnalyticsController = AnalyticsController = __decorate([
     (0, swagger_1.ApiBearerAuth)('access-token'),
     (0, common_1.Controller)('analytics'),
     (0, common_1.UseGuards)(jwt_guard_1.JwtGuard),
-    __metadata("design:paramtypes", [analytics_service_1.AnalyticsService])
+    __metadata("design:paramtypes", [analytics_service_1.AnalyticsService,
+        kafka_consumer_service_1.KafkaConsumerService])
 ], AnalyticsController);
 //# sourceMappingURL=analytics.controller.js.map

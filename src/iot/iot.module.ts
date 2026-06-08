@@ -6,6 +6,8 @@ import { RealtimeModule } from '../realtime/realtime.module';
 import { AlertsModule } from '../alerts/alerts.module';
 import { IotService } from './iot.service';
 import { MqttClient } from './mqtt/mqtt.client';
+import { KafkaProducerService } from './kafka/kafka.producer.service';
+import { KafkaConsumerService } from './kafka/kafka.consumer.service';
 
 @Module({
   imports: [
@@ -13,7 +15,7 @@ import { MqttClient } from './mqtt/mqtt.client';
     RealtimeModule,
     AlertsModule,
   ],
-  providers: [IotService, MqttClient],
-  exports: [IotService, MqttClient],
+  providers: [IotService, MqttClient, KafkaProducerService, KafkaConsumerService],
+  exports: [IotService, MqttClient, KafkaProducerService, KafkaConsumerService],
 })
 export class IotModule {}

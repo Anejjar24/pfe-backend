@@ -23,9 +23,11 @@ let AppController = class AppController {
         this.cacheManager = cacheManager;
     }
     async health(res) {
-        const [dbOk, redisOk] = await Promise.all([
+        const [dbOk, redisOk, timescaleVersion, hypertableInfo] = await Promise.all([
             this.databaseService.healthCheck(),
             this.checkRedis(),
+            this.databaseService.getTimescaleVersion(),
+            this.databaseService.getHypertableInfo(),
         ]);
         const allOk = dbOk && redisOk;
         if (!allOk) {
@@ -35,7 +37,17 @@ let AppController = class AppController {
             status: allOk ? 'ok' : 'degraded',
             timestamp: new Date().toISOString(),
             uptime: Math.floor(process.uptime()),
-            db: { status: dbOk ? 'ok' : 'error' },
+            db: {
+                status: dbOk ? 'ok' : 'error',
+                timescaledb: timescaleVersion ?? 'not installed',
+                hypertable: hypertableInfo
+                    ? {
+                        chunks: hypertableInfo.num_chunks,
+                        compressionEnabled: hypertableInfo.compression_enabled,
+                        compressionRatioPct: hypertableInfo.compression_ratio_pct,
+                    }
+                    : 'not configured',
+            },
             redis: { status: redisOk ? 'ok' : 'error' },
         };
     }

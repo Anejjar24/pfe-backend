@@ -199,7 +199,7 @@ describe('AuthService', () => {
       expect(cacheManager.set).toHaveBeenCalledWith(
         expect.stringMatching(/^rt:deny:/),
         '1',
-        expect.any(Object),
+        expect.any(Number),
       );
     });
   });
@@ -229,7 +229,7 @@ describe('AuthService', () => {
       expect(cacheManager.set).toHaveBeenCalledWith(
         expect.stringMatching(/^rt:deny:/),
         '1',
-        expect.any(Object),
+        expect.any(Number),
       );
     });
   });

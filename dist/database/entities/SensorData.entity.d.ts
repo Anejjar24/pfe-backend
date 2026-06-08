@@ -8,4 +8,5 @@ export declare class SensorData {
     createdAt: Date;
     source: string;
     accuracy: number;
+    setDefaults(): void;
 }

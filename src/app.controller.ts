@@ -17,9 +17,11 @@ export class AppController {
   @ApiResponse({ status: 200, description: 'All systems operational' })
   @ApiResponse({ status: 503, description: 'One or more subsystems degraded' })
   async health(@Res({ passthrough: true }) res: Response) {
-    const [dbOk, redisOk] = await Promise.all([
+    const [dbOk, redisOk, timescaleVersion, hypertableInfo] = await Promise.all([
       this.databaseService.healthCheck(),
       this.checkRedis(),
+      this.databaseService.getTimescaleVersion(),
+      this.databaseService.getHypertableInfo(),
     ]);
 
     const allOk = dbOk && redisOk;
@@ -32,7 +34,17 @@ export class AppController {
       status: allOk ? 'ok' : 'degraded',
       timestamp: new Date().toISOString(),
       uptime: Math.floor(process.uptime()),
-      db: { status: dbOk ? 'ok' : 'error' },
+      db: {
+        status: dbOk ? 'ok' : 'error',
+        timescaledb: timescaleVersion ?? 'not installed',
+        hypertable: hypertableInfo
+          ? {
+              chunks: hypertableInfo.num_chunks,
+              compressionEnabled: hypertableInfo.compression_enabled,
+              compressionRatioPct: hypertableInfo.compression_ratio_pct,
+            }
+          : 'not configured',
+      },
       redis: { status: redisOk ? 'ok' : 'error' },
     };
   }
