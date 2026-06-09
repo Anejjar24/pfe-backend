@@ -1,5 +1,5 @@
 import { DataSource, Repository } from 'typeorm';
-import { Alert } from '../database/entities/Alert.entity';
+import { Alert, AlertStatus, AlertType } from '../database/entities/Alert.entity';
 import { Maintenance } from '../database/entities/Maintenance.entity';
 import { Sensor, SensorStatus } from '../database/entities/Sensor.entity';
 import { SensorAggregate } from '../database/entities/SensorAggregate.entity';
@@ -30,6 +30,46 @@ export declare class AnalyticsService {
             count: number;
         }[];
     }>;
+    getStationStatus(): Promise<{
+        id: string;
+        name: string;
+        status: string;
+        location: string;
+        type: string;
+        totalSensors: number;
+        activeSensors: number;
+        offlineSensors: number;
+        faultySensors: number;
+        openAlerts: number;
+        lastReadingAt: string;
+    }[]>;
+    getAnomalyTimeline(hours?: number, limit?: number): Promise<{
+        id: string;
+        type: AlertType;
+        severity: import("../database/entities/Alert.entity").AlertSeverity;
+        status: AlertStatus;
+        message: string;
+        createdAt: Date;
+        zScore: any;
+        rollingMean: any;
+        rollingStddev: any;
+        value: any;
+        station: {
+            id: string;
+            name: string;
+        } | null;
+        sensor: {
+            id: string;
+            name: string;
+            unit: string;
+            type: import("../database/entities/Sensor.entity").SensorType;
+        } | null;
+    }[]>;
+    getNetworkTrend(hours?: number): Promise<{
+        time: string;
+        avgValue: number;
+        readingCount: number;
+    }[]>;
     getSensorStats(sensorId: string, query: SensorStatsQueryDto): Promise<{
         sensor: {
             id: string;
@@ -89,6 +129,7 @@ export declare class AnalyticsService {
         windowHours: number;
         from: Date;
         totalReadings: number;
+        source: string;
         topSensors: {
             sensorId: string;
             totalReadings: number;
@@ -116,10 +157,10 @@ export declare class AnalyticsService {
             rollingStddev: number | null;
         }[];
     }>;
-    private querySensorTimeBucket;
+    private querySensorBuckets;
     private querySensorHourlyView;
     private querySensorDailyView;
-    private queryStationTimeBucket;
+    private queryStationBuckets;
     private queryStationHourlyView;
     private queryStationDailyView;
 }

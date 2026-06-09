@@ -77,6 +77,139 @@ let AnalyticsService = AnalyticsService_1 = class AnalyticsService {
             })),
         };
     }
+    async getStationStatus() {
+        const rows = await this.dataSource.query(`SELECT
+          st.id,
+          st.name,
+          st.status,
+          st.location,
+          st.type,
+          COUNT(DISTINCT s.id)                                        AS total_sensors,
+          COUNT(DISTINCT s.id) FILTER (WHERE s.status = 'active')    AS active_sensors,
+          COUNT(DISTINCT s.id) FILTER (WHERE s.status = 'offline')   AS offline_sensors,
+          COUNT(DISTINCT s.id) FILTER (WHERE s.status = 'faulty')    AS faulty_sensors,
+          COUNT(DISTINCT a.id) FILTER (WHERE a.status = 'active')    AS open_alerts
+         FROM stations st
+         LEFT JOIN sensors s  ON s.station_id  = st.id
+         LEFT JOIN alerts  a  ON a.station_id  = st.id
+        GROUP BY st.id, st.name, st.status, st.location, st.type
+        ORDER BY st.name ASC`);
+        let lastReadingByStation = {};
+        try {
+            const lr = await this.dataSource.query(`SELECT s.station_id, MAX(sd.timestamp) AS last_at
+           FROM sensor_data sd
+           JOIN sensors s ON s.id = sd.sensor_id
+          GROUP BY s.station_id`);
+            for (const r of lr) {
+                lastReadingByStation[r.station_id] = r.last_at;
+            }
+        }
+        catch {
+        }
+        return rows.map((r) => ({
+            id: r.id,
+            name: r.name,
+            status: r.status,
+            location: r.location,
+            type: r.type,
+            totalSensors: Number(r.total_sensors),
+            activeSensors: Number(r.active_sensors),
+            offlineSensors: Number(r.offline_sensors),
+            faultySensors: Number(r.faulty_sensors),
+            openAlerts: Number(r.open_alerts),
+            lastReadingAt: lastReadingByStation[r.id] ?? null,
+        }));
+    }
+    async getAnomalyTimeline(hours = 24, limit = 100) {
+        const from = new Date(Date.now() - hours * 60 * 60 * 1000);
+        const rows = await this.alertRepo
+            .createQueryBuilder('a')
+            .leftJoin('a.station', 'st')
+            .leftJoin('a.sensor', 's')
+            .select([
+            'a.id',
+            'a.type',
+            'a.severity',
+            'a.status',
+            'a.message',
+            'a.data',
+            'a.createdAt',
+            'st.id',
+            'st.name',
+            's.id',
+            's.name',
+            's.unit',
+            's.type',
+        ])
+            .where('a.createdAt >= :from', { from })
+            .andWhere('a.type IN (:...types)', {
+            types: [
+                Alert_entity_1.AlertType.ANOMALY,
+                Alert_entity_1.AlertType.THRESHOLD_VIOLATION,
+                Alert_entity_1.AlertType.CRITICAL_EVENT,
+                Alert_entity_1.AlertType.SENSOR_OFFLINE,
+            ],
+        })
+            .orderBy('a.createdAt', 'DESC')
+            .limit(limit)
+            .getMany();
+        return rows.map((a) => ({
+            id: a.id,
+            type: a.type,
+            severity: a.severity,
+            status: a.status,
+            message: a.message,
+            createdAt: a.createdAt,
+            zScore: a.data?.zScore ?? null,
+            rollingMean: a.data?.rollingMean ?? null,
+            rollingStddev: a.data?.rollingStddev ?? null,
+            value: a.data?.value ?? null,
+            station: a.station
+                ? { id: a.station.id, name: a.station.name }
+                : null,
+            sensor: a.sensor
+                ? { id: a.sensor.id, name: a.sensor.name, unit: a.sensor.unit, type: a.sensor.type }
+                : null,
+        }));
+    }
+    async getNetworkTrend(hours = 6) {
+        const from = new Date(Date.now() - hours * 60 * 60 * 1000);
+        try {
+            const rows = await this.dataSource.query(`SELECT
+            bucket,
+            AVG(avg_value)        AS avg_value,
+            SUM(reading_count)    AS reading_count
+           FROM sensor_data_hourly
+          WHERE bucket >= $1
+          GROUP BY bucket
+          ORDER BY bucket ASC`, [from]);
+            return rows.map((r) => ({
+                time: r.bucket,
+                avgValue: round4(r.avg_value),
+                readingCount: Number(r.reading_count),
+            }));
+        }
+        catch {
+            try {
+                const rows = await this.dataSource.query(`SELECT
+              DATE_TRUNC('hour', timestamp) AS bucket,
+              AVG(value)                    AS avg_value,
+              COUNT(*)                      AS reading_count
+             FROM sensor_data
+            WHERE timestamp >= $1
+            GROUP BY bucket
+            ORDER BY bucket ASC`, [from]);
+                return rows.map((r) => ({
+                    time: r.bucket,
+                    avgValue: round4(r.avg_value),
+                    readingCount: Number(r.reading_count),
+                }));
+            }
+            catch {
+                return [];
+            }
+        }
+    }
     async getSensorStats(sensorId, query) {
         const sensor = await this.sensorRepo.findOne({
             where: { id: sensorId },
@@ -85,23 +218,28 @@ let AnalyticsService = AnalyticsService_1 = class AnalyticsService {
         if (!sensor)
             return null;
         const now = new Date();
-        const from = query.from
-            ? new Date(query.from)
-            : new Date(now.getTime() - 24 * 60 * 60 * 1000);
+        const from = query.from ? new Date(query.from) : new Date(now.getTime() - 24 * 60 * 60 * 1000);
         const to = query.to ? new Date(query.to) : now;
         const granularity = query.granularity ?? analytics_query_dto_1.HistoryGranularity.HOUR;
         const interval = analytics_query_dto_1.GRANULARITY_INTERVAL[granularity];
-        const [raw] = await this.dataSource.query(`SELECT
-          AVG(value)    AS avg,
-          MIN(value)    AS min,
-          MAX(value)    AS max,
-          COUNT(*)      AS count,
-          STDDEV(value) AS stddev
-       FROM sensor_data
-       WHERE sensor_id = $1
-         AND timestamp >= $2
-         AND timestamp <= $3`, [sensorId, from, to]);
-        let timeSeries;
+        let raw = null;
+        try {
+            const [result] = await this.dataSource.query(`SELECT
+            AVG(value)    AS avg,
+            MIN(value)    AS min,
+            MAX(value)    AS max,
+            COUNT(*)      AS count,
+            STDDEV(value) AS stddev
+           FROM sensor_data
+          WHERE sensor_id = $1
+            AND timestamp >= $2
+            AND timestamp <= $3`, [sensorId, from, to]);
+            raw = result ?? null;
+        }
+        catch (err) {
+            this.logger.warn(`getSensorStats: raw stats query failed for sensor ${sensorId}: ${err.message}`);
+        }
+        let timeSeries = [];
         if (granularity === analytics_query_dto_1.HistoryGranularity.HOUR) {
             timeSeries = await this.querySensorHourlyView(sensorId, from, to);
         }
@@ -109,7 +247,7 @@ let AnalyticsService = AnalyticsService_1 = class AnalyticsService {
             timeSeries = await this.querySensorDailyView(sensorId, from, to);
         }
         else {
-            timeSeries = await this.querySensorTimeBucket(sensorId, from, to, interval);
+            timeSeries = await this.querySensorBuckets(sensorId, from, to, interval);
         }
         return {
             sensor: {
@@ -146,9 +284,7 @@ let AnalyticsService = AnalyticsService_1 = class AnalyticsService {
         const granularity = query.granularity ?? analytics_query_dto_1.HistoryGranularity.HOUR;
         const interval = analytics_query_dto_1.GRANULARITY_INTERVAL[granularity];
         const defaultHours = granularity === analytics_query_dto_1.HistoryGranularity.DAY ? 30 * 24 : 24;
-        const from = query.from
-            ? new Date(query.from)
-            : new Date(now.getTime() - defaultHours * 60 * 60 * 1000);
+        const from = query.from ? new Date(query.from) : new Date(now.getTime() - defaultHours * 60 * 60 * 1000);
         const to = query.to ? new Date(query.to) : now;
         let rows;
         if (granularity === analytics_query_dto_1.HistoryGranularity.HOUR) {
@@ -158,17 +294,12 @@ let AnalyticsService = AnalyticsService_1 = class AnalyticsService {
             rows = await this.queryStationDailyView(stationId, from, to);
         }
         else {
-            rows = await this.queryStationTimeBucket(stationId, from, to, interval);
+            rows = await this.queryStationBuckets(stationId, from, to, interval);
         }
         const bySensor = new Map();
         for (const row of rows) {
             if (!bySensor.has(row.sensor_id)) {
-                bySensor.set(row.sensor_id, {
-                    sensorId: row.sensor_id,
-                    sensorName: row.sensor_name,
-                    unit: row.unit,
-                    buckets: [],
-                });
+                bySensor.set(row.sensor_id, { sensorId: row.sensor_id, sensorName: row.sensor_name, unit: row.unit, buckets: [] });
             }
             bySensor.get(row.sensor_id).buckets.push({
                 time: row.bucket,
@@ -197,13 +328,11 @@ let AnalyticsService = AnalyticsService_1 = class AnalyticsService {
           GROUP BY sensor_id
           ORDER BY total_readings DESC
           LIMIT 20`, [from]);
-            const [{ total }] = await this.dataSource.query(`SELECT COALESCE(SUM(reading_count), 0) AS total
-           FROM sensor_data_hourly
-          WHERE bucket >= $1`, [from]);
+            const [{ total }] = await this.dataSource.query(`SELECT COALESCE(SUM(reading_count), 0) AS total FROM sensor_data_hourly WHERE bucket >= $1`, [from]);
             return {
-                windowHours: hours,
-                from,
+                windowHours: hours, from,
                 totalReadings: Number(total),
+                source: 'aggregate',
                 topSensors: perSensor.map((r) => ({
                     sensorId: r.sensor_id,
                     totalReadings: Number(r.total_readings),
@@ -212,8 +341,32 @@ let AnalyticsService = AnalyticsService_1 = class AnalyticsService {
             };
         }
         catch {
-            this.logger.warn('sensor_data_hourly view not available — system metrics skipped');
-            return { windowHours: hours, from, totalReadings: 0, topSensors: [] };
+            this.logger.warn('sensor_data_hourly unavailable — falling back to raw sensor_data count');
+            try {
+                const perSensor = await this.dataSource.query(`SELECT
+              sensor_id,
+              COUNT(*)   AS total_readings,
+              AVG(value) AS avg_value
+             FROM sensor_data
+            WHERE timestamp >= $1
+            GROUP BY sensor_id
+            ORDER BY total_readings DESC
+            LIMIT 20`, [from]);
+                const [{ total }] = await this.dataSource.query(`SELECT COUNT(*) AS total FROM sensor_data WHERE timestamp >= $1`, [from]);
+                return {
+                    windowHours: hours, from,
+                    totalReadings: Number(total),
+                    source: 'raw',
+                    topSensors: perSensor.map((r) => ({
+                        sensorId: r.sensor_id,
+                        totalReadings: Number(r.total_readings),
+                        avgValue: round4(r.avg_value),
+                    })),
+                };
+            }
+            catch {
+                return { windowHours: hours, from, totalReadings: 0, source: 'unavailable', topSensors: [] };
+            }
         }
     }
     async getKpis(granularity = 'hourly', hours = 24) {
@@ -236,9 +389,7 @@ let AnalyticsService = AnalyticsService_1 = class AnalyticsService {
                 }
             }
             return {
-                granularity,
-                windowHours: hours,
-                from,
+                granularity, windowHours: hours, from,
                 totalBuckets: rows.length,
                 totalAnomalies,
                 anomalyByStation,
@@ -258,41 +409,43 @@ let AnalyticsService = AnalyticsService_1 = class AnalyticsService {
             };
         }
         catch {
-            this.logger.warn('sensor_aggregates table not yet populated — returning empty KPIs');
-            return {
-                granularity,
-                windowHours: hours,
-                from,
-                totalBuckets: 0,
-                totalAnomalies: 0,
-                anomalyByStation: {},
-                rows: [],
-            };
+            this.logger.warn('sensor_aggregates not yet populated — returning empty KPIs');
+            return { granularity, windowHours: hours, from, totalBuckets: 0, totalAnomalies: 0, anomalyByStation: {}, rows: [] };
         }
     }
-    async querySensorTimeBucket(sensorId, from, to, interval) {
-        const rows = await this.dataSource.query(`SELECT
-          time_bucket($1::interval, timestamp) AS bucket,
-          AVG(value)    AS avg,
-          MIN(value)    AS min,
-          MAX(value)    AS max,
-          STDDEV(value) AS stddev,
-          COUNT(*)      AS cnt
-         FROM sensor_data
-        WHERE sensor_id = $2
-          AND timestamp >= $3
-          AND timestamp <= $4
-        GROUP BY bucket
-        ORDER BY bucket ASC`, [interval, sensorId, from, to]);
-        return rows.map(mapBucketRow);
+    async querySensorBuckets(sensorId, from, to, interval) {
+        try {
+            const rows = await this.dataSource.query(`SELECT time_bucket($1::interval, timestamp) AS bucket,
+                AVG(value) AS avg, MIN(value) AS min, MAX(value) AS max,
+                STDDEV(value) AS stddev, COUNT(*) AS cnt
+           FROM sensor_data
+          WHERE sensor_id = $2 AND timestamp >= $3 AND timestamp <= $4
+          GROUP BY bucket ORDER BY bucket ASC`, [interval, sensorId, from, to]);
+            return rows.map(mapBucketRow);
+        }
+        catch {
+            this.logger.warn(`time_bucket unavailable — using DATE_TRUNC for sensor ${sensorId}`);
+        }
+        try {
+            const precision = intervalToDateTrunc(interval);
+            const rows = await this.dataSource.query(`SELECT DATE_TRUNC($1, timestamp) AS bucket,
+                AVG(value) AS avg, MIN(value) AS min, MAX(value) AS max,
+                STDDEV(value) AS stddev, COUNT(*) AS cnt
+           FROM sensor_data
+          WHERE sensor_id = $2 AND timestamp >= $3 AND timestamp <= $4
+          GROUP BY bucket ORDER BY bucket ASC`, [precision, sensorId, from, to]);
+            return rows.map(mapBucketRow);
+        }
+        catch (err) {
+            this.logger.error(`querySensorBuckets: both strategies failed: ${err.message}`);
+            return [];
+        }
     }
     async querySensorHourlyView(sensorId, from, to) {
         try {
             const rows = await this.dataSource.query(`SELECT bucket, avg_value, min_value, max_value, stddev_value, reading_count
            FROM sensor_data_hourly
-          WHERE sensor_id = $1
-            AND bucket >= $2
-            AND bucket <= $3
+          WHERE sensor_id = $1 AND bucket >= $2 AND bucket <= $3
           ORDER BY bucket ASC`, [sensorId, from, to]);
             return rows.map((r) => ({
                 time: r.bucket,
@@ -304,17 +457,15 @@ let AnalyticsService = AnalyticsService_1 = class AnalyticsService {
             }));
         }
         catch {
-            this.logger.warn('sensor_data_hourly view unavailable — falling back to time_bucket query');
-            return this.querySensorTimeBucket(sensorId, from, to, '1 hour');
+            this.logger.warn('sensor_data_hourly unavailable — falling back to bucket query');
+            return this.querySensorBuckets(sensorId, from, to, '1 hour');
         }
     }
     async querySensorDailyView(sensorId, from, to) {
         try {
             const rows = await this.dataSource.query(`SELECT bucket, avg_value, min_value, max_value, stddev_value, reading_count
            FROM sensor_data_daily
-          WHERE sensor_id = $1
-            AND bucket >= $2
-            AND bucket <= $3
+          WHERE sensor_id = $1 AND bucket >= $2 AND bucket <= $3
           ORDER BY bucket ASC`, [sensorId, from, to]);
             return rows.map((r) => ({
                 time: r.bucket,
@@ -326,75 +477,70 @@ let AnalyticsService = AnalyticsService_1 = class AnalyticsService {
             }));
         }
         catch {
-            this.logger.warn('sensor_data_daily view unavailable — falling back to time_bucket query');
-            return this.querySensorTimeBucket(sensorId, from, to, '1 day');
+            this.logger.warn('sensor_data_daily unavailable — falling back to bucket query');
+            return this.querySensorBuckets(sensorId, from, to, '1 day');
         }
     }
-    async queryStationTimeBucket(stationId, from, to, interval) {
-        return this.dataSource.query(`SELECT
-          s.id                                   AS sensor_id,
-          s.name                                 AS sensor_name,
-          s.unit                                 AS unit,
-          time_bucket($1::interval, sd.timestamp) AS bucket,
-          AVG(sd.value)    AS avg,
-          MIN(sd.value)    AS min,
-          MAX(sd.value)    AS max,
-          STDDEV(sd.value) AS stddev,
-          COUNT(*)         AS cnt
-         FROM sensor_data sd
-         JOIN sensors s ON s.id = sd.sensor_id
-        WHERE s.station_id = $2
-          AND sd.timestamp >= $3
-          AND sd.timestamp <= $4
-        GROUP BY s.id, s.name, s.unit, bucket
-        ORDER BY bucket ASC`, [interval, stationId, from, to]);
+    async queryStationBuckets(stationId, from, to, interval) {
+        try {
+            return await this.dataSource.query(`SELECT s.id AS sensor_id, s.name AS sensor_name, s.unit,
+                time_bucket($1::interval, sd.timestamp) AS bucket,
+                AVG(sd.value) AS avg, MIN(sd.value) AS min,
+                MAX(sd.value) AS max, STDDEV(sd.value) AS stddev, COUNT(*) AS cnt
+           FROM sensor_data sd
+           JOIN sensors s ON s.id = sd.sensor_id
+          WHERE s.station_id = $2 AND sd.timestamp >= $3 AND sd.timestamp <= $4
+          GROUP BY s.id, s.name, s.unit, bucket
+          ORDER BY bucket ASC`, [interval, stationId, from, to]);
+        }
+        catch {
+            this.logger.warn('time_bucket unavailable for station query — using DATE_TRUNC');
+        }
+        try {
+            const precision = intervalToDateTrunc(interval);
+            return await this.dataSource.query(`SELECT s.id AS sensor_id, s.name AS sensor_name, s.unit,
+                DATE_TRUNC($1, sd.timestamp) AS bucket,
+                AVG(sd.value) AS avg, MIN(sd.value) AS min,
+                MAX(sd.value) AS max, STDDEV(sd.value) AS stddev, COUNT(*) AS cnt
+           FROM sensor_data sd
+           JOIN sensors s ON s.id = sd.sensor_id
+          WHERE s.station_id = $2 AND sd.timestamp >= $3 AND sd.timestamp <= $4
+          GROUP BY s.id, s.name, s.unit, bucket
+          ORDER BY bucket ASC`, [precision, stationId, from, to]);
+        }
+        catch (err) {
+            this.logger.error(`queryStationBuckets failed: ${err.message}`);
+            return [];
+        }
     }
     async queryStationHourlyView(stationId, from, to) {
         try {
-            return await this.dataSource.query(`SELECT
-            s.id         AS sensor_id,
-            s.name       AS sensor_name,
-            s.unit       AS unit,
-            h.bucket     AS bucket,
-            h.avg_value  AS avg,
-            h.min_value  AS min,
-            h.max_value  AS max,
-            h.stddev_value AS stddev,
-            h.reading_count AS cnt
+            return await this.dataSource.query(`SELECT s.id AS sensor_id, s.name AS sensor_name, s.unit,
+                h.bucket, h.avg_value AS avg, h.min_value AS min,
+                h.max_value AS max, h.stddev_value AS stddev, h.reading_count AS cnt
            FROM sensor_data_hourly h
            JOIN sensors s ON s.id = h.sensor_id
-          WHERE s.station_id = $1
-            AND h.bucket >= $2
-            AND h.bucket <= $3
+          WHERE s.station_id = $1 AND h.bucket >= $2 AND h.bucket <= $3
           ORDER BY h.bucket ASC`, [stationId, from, to]);
         }
         catch {
-            this.logger.warn('sensor_data_hourly unavailable — falling back to time_bucket');
-            return this.queryStationTimeBucket(stationId, from, to, '1 hour');
+            this.logger.warn('sensor_data_hourly unavailable for station — falling back');
+            return this.queryStationBuckets(stationId, from, to, '1 hour');
         }
     }
     async queryStationDailyView(stationId, from, to) {
         try {
-            return await this.dataSource.query(`SELECT
-            s.id         AS sensor_id,
-            s.name       AS sensor_name,
-            s.unit       AS unit,
-            d.bucket     AS bucket,
-            d.avg_value  AS avg,
-            d.min_value  AS min,
-            d.max_value  AS max,
-            d.stddev_value AS stddev,
-            d.reading_count AS cnt
+            return await this.dataSource.query(`SELECT s.id AS sensor_id, s.name AS sensor_name, s.unit,
+                d.bucket, d.avg_value AS avg, d.min_value AS min,
+                d.max_value AS max, d.stddev_value AS stddev, d.reading_count AS cnt
            FROM sensor_data_daily d
            JOIN sensors s ON s.id = d.sensor_id
-          WHERE s.station_id = $1
-            AND d.bucket >= $2
-            AND d.bucket <= $3
+          WHERE s.station_id = $1 AND d.bucket >= $2 AND d.bucket <= $3
           ORDER BY d.bucket ASC`, [stationId, from, to]);
         }
         catch {
-            this.logger.warn('sensor_data_daily unavailable — falling back to time_bucket');
-            return this.queryStationTimeBucket(stationId, from, to, '1 day');
+            this.logger.warn('sensor_data_daily unavailable for station — falling back');
+            return this.queryStationBuckets(stationId, from, to, '1 day');
         }
     }
 };
@@ -430,5 +576,12 @@ function mapBucketRow(r) {
         stddev: r.stddev != null ? round4(r.stddev) : null,
         count: Number(r.cnt),
     };
+}
+function intervalToDateTrunc(interval) {
+    if (interval.includes('day'))
+        return 'day';
+    if (interval.includes('hour'))
+        return 'hour';
+    return 'minute';
 }
 //# sourceMappingURL=analytics.service.js.map

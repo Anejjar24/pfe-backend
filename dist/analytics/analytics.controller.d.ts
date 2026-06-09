@@ -5,6 +5,67 @@ export declare class AnalyticsController {
     private readonly analyticsService;
     private readonly kafkaConsumer;
     constructor(analyticsService: AnalyticsService, kafkaConsumer: KafkaConsumerService);
+    getOverview(): Promise<{
+        totalStations: number;
+        activeSensors: number;
+        openAlerts: number;
+        maintenancePending: number;
+        stationsByStatus: {
+            status: string;
+            count: number;
+        }[];
+        alertsBySeverity: {
+            severity: string;
+            count: number;
+        }[];
+    }>;
+    getStationStatus(): Promise<{
+        id: string;
+        name: string;
+        status: string;
+        location: string;
+        type: string;
+        totalSensors: number;
+        activeSensors: number;
+        offlineSensors: number;
+        faultySensors: number;
+        openAlerts: number;
+        lastReadingAt: string;
+    }[]>;
+    getAnomalyTimeline(hours?: number, limit?: number): Promise<{
+        id: string;
+        type: import("../database/entities/Alert.entity").AlertType;
+        severity: import("../database/entities/Alert.entity").AlertSeverity;
+        status: import("../database/entities/Alert.entity").AlertStatus;
+        message: string;
+        createdAt: Date;
+        zScore: any;
+        rollingMean: any;
+        rollingStddev: any;
+        value: any;
+        station: {
+            id: string;
+            name: string;
+        } | null;
+        sensor: {
+            id: string;
+            name: string;
+            unit: string;
+            type: import("../database/entities/Sensor.entity").SensorType;
+        } | null;
+    }[]>;
+    getNetworkTrend(hours?: number): Promise<{
+        time: string;
+        avgValue: number;
+        readingCount: number;
+    }[]>;
+    getDataFreshness(): {
+        lastReadingAt: string | null;
+        lastAnomalyAt: string | null;
+        totalMeasurements: number;
+        totalAnomalies: number;
+        monitoringActive: boolean;
+    };
     getPipelineStats(): {
         consumerRunning: boolean;
         readingsConsumed: number;
@@ -38,24 +99,11 @@ export declare class AnalyticsController {
         windowHours: number;
         from: Date;
         totalReadings: number;
+        source: string;
         topSensors: {
             sensorId: string;
             totalReadings: number;
             avgValue: number;
-        }[];
-    }>;
-    getOverview(): Promise<{
-        totalStations: number;
-        activeSensors: number;
-        openAlerts: number;
-        maintenancePending: number;
-        stationsByStatus: {
-            status: string;
-            count: number;
-        }[];
-        alertsBySeverity: {
-            severity: string;
-            count: number;
         }[];
     }>;
     getSensorStats(id: string, query: SensorStatsQueryDto): Promise<{

@@ -24,6 +24,28 @@ let AnalyticsController = class AnalyticsController {
         this.analyticsService = analyticsService;
         this.kafkaConsumer = kafkaConsumer;
     }
+    getOverview() {
+        return this.analyticsService.getOverview();
+    }
+    getStationStatus() {
+        return this.analyticsService.getStationStatus();
+    }
+    async getAnomalyTimeline(hours, limit) {
+        return this.analyticsService.getAnomalyTimeline(hours ?? 24, limit ?? 100);
+    }
+    async getNetworkTrend(hours) {
+        return this.analyticsService.getNetworkTrend(hours ?? 6);
+    }
+    getDataFreshness() {
+        const stats = this.kafkaConsumer.getPipelineStats();
+        return {
+            lastReadingAt: stats.lastReadingAt ?? null,
+            lastAnomalyAt: stats.lastAnomalyAt ?? null,
+            totalMeasurements: stats.readingsConsumed ?? 0,
+            totalAnomalies: stats.anomaliesConsumed ?? 0,
+            monitoringActive: this.kafkaConsumer.getIsRunning(),
+        };
+    }
     getPipelineStats() {
         return {
             ...this.kafkaConsumer.getPipelineStats(),
@@ -35,9 +57,6 @@ let AnalyticsController = class AnalyticsController {
     }
     async getSystemMetrics(hours) {
         return this.analyticsService.getSystemMetrics(hours ?? 24);
-    }
-    getOverview() {
-        return this.analyticsService.getOverview();
     }
     async getSensorStats(id, query) {
         const result = await this.analyticsService.getSensorStats(id, query);
@@ -54,19 +73,65 @@ let AnalyticsController = class AnalyticsController {
 };
 exports.AnalyticsController = AnalyticsController;
 __decorate([
+    (0, common_1.Get)('overview'),
+    (0, swagger_1.ApiOperation)({ summary: 'System-wide counts: stations, sensors, alerts, maintenance' }),
+    (0, swagger_1.ApiResponse)({ status: 200 }),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", []),
+    __metadata("design:returntype", void 0)
+], AnalyticsController.prototype, "getOverview", null);
+__decorate([
+    (0, common_1.Get)('station-status'),
+    (0, swagger_1.ApiOperation)({ summary: 'Per-station health: sensor counts by status, open alerts, last reading' }),
+    (0, swagger_1.ApiResponse)({ status: 200 }),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", []),
+    __metadata("design:returntype", void 0)
+], AnalyticsController.prototype, "getStationStatus", null);
+__decorate([
+    (0, common_1.Get)('anomaly-timeline'),
+    (0, swagger_1.ApiOperation)({ summary: 'Recent anomaly and threshold-violation alerts with station/sensor context' }),
+    (0, swagger_1.ApiQuery)({ name: 'hours', required: false, description: 'Look-back window in hours (default: 24)' }),
+    (0, swagger_1.ApiQuery)({ name: 'limit', required: false, description: 'Max events returned (default: 100)' }),
+    (0, swagger_1.ApiResponse)({ status: 200 }),
+    __param(0, (0, common_1.Query)('hours', new common_1.ParseIntPipe({ optional: true }))),
+    __param(1, (0, common_1.Query)('limit', new common_1.ParseIntPipe({ optional: true }))),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Number, Number]),
+    __metadata("design:returntype", Promise)
+], AnalyticsController.prototype, "getAnomalyTimeline", null);
+__decorate([
+    (0, common_1.Get)('network-trend'),
+    (0, swagger_1.ApiOperation)({ summary: 'Hourly-bucketed average reading across all sensors for the last N hours' }),
+    (0, swagger_1.ApiQuery)({ name: 'hours', required: false, description: 'Look-back window (default: 6)' }),
+    (0, swagger_1.ApiResponse)({ status: 200 }),
+    __param(0, (0, common_1.Query)('hours', new common_1.ParseIntPipe({ optional: true }))),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Number]),
+    __metadata("design:returntype", Promise)
+], AnalyticsController.prototype, "getNetworkTrend", null);
+__decorate([
+    (0, common_1.Get)('data-freshness'),
+    (0, swagger_1.ApiOperation)({ summary: 'Monitoring pipeline status: last reading timestamp, consumer health' }),
+    (0, swagger_1.ApiResponse)({ status: 200 }),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", []),
+    __metadata("design:returntype", void 0)
+], AnalyticsController.prototype, "getDataFreshness", null);
+__decorate([
     (0, common_1.Get)('pipeline/stats'),
-    (0, swagger_1.ApiOperation)({ summary: 'Kafka pipeline health: messages consumed, last event timestamps, consumer group' }),
-    (0, swagger_1.ApiResponse)({ status: 200, description: 'Pipeline stats object' }),
+    (0, swagger_1.ApiOperation)({ summary: '[Internal] Raw Kafka consumer stats' }),
+    (0, swagger_1.ApiResponse)({ status: 200 }),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", []),
     __metadata("design:returntype", void 0)
 ], AnalyticsController.prototype, "getPipelineStats", null);
 __decorate([
     (0, common_1.Get)('kpis'),
-    (0, swagger_1.ApiOperation)({ summary: 'Pre-computed sensor KPIs from Spark aggregation (sensor_aggregates table)' }),
-    (0, swagger_1.ApiQuery)({ name: 'granularity', required: false, enum: ['hourly', 'daily'], description: 'Bucket size (default: hourly)' }),
-    (0, swagger_1.ApiQuery)({ name: 'hours', required: false, description: 'Look-back window in hours (default: 24)' }),
-    (0, swagger_1.ApiResponse)({ status: 200, description: 'KPI rows + anomaly summary per station' }),
+    (0, swagger_1.ApiOperation)({ summary: 'Pre-computed sensor KPIs from the aggregation engine (sensor_aggregates)' }),
+    (0, swagger_1.ApiQuery)({ name: 'granularity', required: false, enum: ['hourly', 'daily'] }),
+    (0, swagger_1.ApiQuery)({ name: 'hours', required: false }),
+    (0, swagger_1.ApiResponse)({ status: 200 }),
     __param(0, (0, common_1.Query)('granularity')),
     __param(1, (0, common_1.Query)('hours', new common_1.ParseIntPipe({ optional: true }))),
     __metadata("design:type", Function),
@@ -75,29 +140,22 @@ __decorate([
 ], AnalyticsController.prototype, "getKpis", null);
 __decorate([
     (0, common_1.Get)('system-metrics'),
-    (0, swagger_1.ApiOperation)({ summary: 'System throughput from TimescaleDB continuous aggregates (top sensors by reading count)' }),
-    (0, swagger_1.ApiQuery)({ name: 'hours', required: false, description: 'Look-back window in hours (default: 24)' }),
-    (0, swagger_1.ApiResponse)({ status: 200, description: 'System-level throughput metrics' }),
+    (0, swagger_1.ApiOperation)({ summary: 'Measurement volume and top-sensor throughput for the look-back window' }),
+    (0, swagger_1.ApiQuery)({ name: 'hours', required: false }),
+    (0, swagger_1.ApiResponse)({ status: 200 }),
     __param(0, (0, common_1.Query)('hours', new common_1.ParseIntPipe({ optional: true }))),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [Number]),
     __metadata("design:returntype", Promise)
 ], AnalyticsController.prototype, "getSystemMetrics", null);
 __decorate([
-    (0, common_1.Get)('overview'),
-    (0, swagger_1.ApiOperation)({ summary: 'System-wide KPIs: station counts, active sensors, open alerts, pending maintenance' }),
-    (0, swagger_1.ApiResponse)({ status: 200, description: 'Overview object with counts and breakdowns' }),
-    __metadata("design:type", Function),
-    __metadata("design:paramtypes", []),
-    __metadata("design:returntype", void 0)
-], AnalyticsController.prototype, "getOverview", null);
-__decorate([
     (0, common_1.Get)('sensors/:id/stats'),
-    (0, swagger_1.ApiOperation)({ summary: 'Per-sensor statistics: avg/min/max/stddev + hourly time-series' }),
+    (0, swagger_1.ApiOperation)({ summary: 'Aggregated statistics + time-series for one sensor' }),
     (0, swagger_1.ApiParam)({ name: 'id', description: 'Sensor UUID' }),
-    (0, swagger_1.ApiQuery)({ name: 'from', required: false, description: 'Range start (ISO 8601). Default: 24 h ago' }),
-    (0, swagger_1.ApiQuery)({ name: 'to', required: false, description: 'Range end (ISO 8601). Default: now' }),
-    (0, swagger_1.ApiResponse)({ status: 200, description: 'Sensor stats + time-series buckets' }),
+    (0, swagger_1.ApiQuery)({ name: 'from', required: false }),
+    (0, swagger_1.ApiQuery)({ name: 'to', required: false }),
+    (0, swagger_1.ApiQuery)({ name: 'granularity', required: false }),
+    (0, swagger_1.ApiResponse)({ status: 200 }),
     (0, swagger_1.ApiResponse)({ status: 404, description: 'Sensor not found' }),
     __param(0, (0, common_1.Param)('id')),
     __param(1, (0, common_1.Query)()),
@@ -107,13 +165,10 @@ __decorate([
 ], AnalyticsController.prototype, "getSensorStats", null);
 __decorate([
     (0, common_1.Get)('stations/:id/history'),
-    (0, swagger_1.ApiOperation)({ summary: 'Station sensor history grouped by hour or day' }),
+    (0, swagger_1.ApiOperation)({ summary: 'Per-sensor bucketed readings for an entire station' }),
     (0, swagger_1.ApiParam)({ name: 'id', description: 'Station UUID' }),
-    (0, swagger_1.ApiQuery)({ name: 'granularity', required: false, enum: ['hour', 'day'], description: 'Bucket size (default: hour)' }),
-    (0, swagger_1.ApiQuery)({ name: 'from', required: false, description: 'Range start (ISO 8601)' }),
-    (0, swagger_1.ApiQuery)({ name: 'to', required: false, description: 'Range end (ISO 8601)' }),
-    (0, swagger_1.ApiResponse)({ status: 200, description: 'Per-sensor bucketed readings for the station' }),
-    (0, swagger_1.ApiResponse)({ status: 404, description: 'Station not found' }),
+    (0, swagger_1.ApiResponse)({ status: 200 }),
+    (0, swagger_1.ApiResponse)({ status: 404 }),
     __param(0, (0, common_1.Param)('id')),
     __param(1, (0, common_1.Query)()),
     __metadata("design:type", Function),
